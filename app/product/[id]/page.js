@@ -23,7 +23,6 @@ const I = {
 };
 
 function fmtMod(v, cur) {
-  // Use Digiseller's pre-formatted modifier string if available (e.g. "+5,50 USD")
   if (v.modifyDisplay) return v.modifyDisplay;
   const r = v.rate; if (!r) return null;
   if (r > 0) return `+${cur.symbol}${r}`;
@@ -37,7 +36,6 @@ function calcPrice(base, options, vals) {
     if (!o.variants?.length) return;
     const v = o.variants.find(va => va.id == vals[o.id]);
     if (!v || !v.rate) return;
-    // modify_value is always a fixed USD addition from Digiseller
     p += v.rate;
   });
   return Math.max(0, p);
@@ -58,7 +56,6 @@ function ProductPage() {
   const [buyError, setBuyError] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
   const [purchased, setPurchased] = useState(false);
-  const [buyerEmail, setBuyerEmail] = useState("");
 
   useEffect(() => {
     if (!productId) return;
@@ -84,14 +81,8 @@ function ProductPage() {
 
   const adjustedPrice = useMemo(() => product ? calcPrice(product.price, product.options, optionValues) : 0, [product, optionValues]);
 
-  // Validate required fields
   const validate = () => {
     const errs = {};
-    // Validate email
-    if (!buyerEmail.trim() || !buyerEmail.includes("@")) {
-      errs._email = lang === "ru" ? "Введите ваш email" : "Please enter your email";
-    }
-    // Validate product options
     (product?.options || []).forEach(opt => {
       if (!opt.required) return;
       const val = optionValues[opt.id];
@@ -109,14 +100,7 @@ function ProductPage() {
   const handleBuyNow = async () => {
     if (!product || buying) return;
     setBuyError("");
-
-    // Check stock before proceeding
-    if (product.inStock === false) {
-      setBuyError(lang === "ru" ? "Товар закончился" : "This product is currently out of stock");
-      return;
-    }
-
-    // Validate required fields first
+    if (product.inStock === false) { setBuyError(lang === "ru" ? "Товар закончился" : "Out of stock"); return; }
     if (!validate()) return;
 
     setBuying(true);
@@ -124,14 +108,7 @@ function ProductPage() {
       const hasOptions = product.options?.length > 0;
 
       if (hasOptions) {
-        const opts = product.options.map(opt => ({
-          id: opt.id,
-          type: opt.type,
-          value: String(optionValues[opt.id] ?? ""),
-        }));
-
-        console.log("Submitting options:", opts);
-
+        const opts = product.options.map(opt => ({ id: opt.id, type: opt.type, value: String(optionValues[opt.id] ?? "") }));
         const res = await fetch("/api/product", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -140,63 +117,19 @@ function ProductPage() {
         const data = await res.json();
 
         if (data.ok && data.id_po) {
-          // Save order to Supabase BEFORE opening payment
-          try {
-            await fetch("/api/checkout", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                productId: product.id, productName: product.name,
-                price: adjustedPrice, currency: cur.code,
-                buyerEmail, options: opts, sellerId: product.sellerId,
-                sellerName: product.sellerName || "", idPo: data.id_po,
-              }),
-            });
-          } catch (e) { console.error("Save order error:", e); }
-
           const ai = data.affiliateId || product.sellerId || "";
-          const successUrl = window.location.origin + "/order/success";
-          const failUrl = window.location.origin + "/order/failed";
-          const payUrl = `https://www.digiseller.market/asp2/pay_wm.asp?id_d=${product.id}&id_po=${data.id_po}&ai=${ai}&lang=${lang === "ru" ? "ru-RU" : "en-US"}&failpage=${encodeURIComponent(failUrl)}&ReturnURL=${encodeURIComponent(successUrl)}&successurl=${encodeURIComponent(successUrl)}&_ow=${encodeURIComponent(successUrl)}`;
+          const payUrl = `https://www.digiseller.market/asp2/pay_wm.asp?id_d=${product.id}&id_po=${data.id_po}&ai=${ai}&lang=${lang === "ru" ? "ru-RU" : "en-US"}`;
           window.open(payUrl, "_blank");
           setPurchased(true);
         } else {
-          // Show error to user — DO NOT silently fallback
-          const errMsg = data.error || "Failed to process options";
-          setBuyError(errMsg);
-          console.error("Options submit failed:", data);
-
-          // Log the submitted data for debugging
-          if (data.submitted) {
-            console.log("Submitted to Digiseller:", JSON.stringify(data.submitted, null, 2));
-          }
-          if (data.details) {
-            console.log("Digiseller response:", JSON.stringify(data.details, null, 2));
-          }
+          setBuyError(data.error || "Failed to process options");
         }
       } else {
-        // Save order to Supabase
-        try {
-          await fetch("/api/checkout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              productId: product.id, productName: product.name,
-              price: adjustedPrice, currency: cur.code,
-              buyerEmail, sellerId: product.sellerId,
-              sellerName: product.sellerName || "",
-            }),
-          });
-        } catch (e) { console.error("Save order error:", e); }
-
-        const successUrl = window.location.origin + "/order/success";
-        const failUrl = window.location.origin + "/order/failed";
-        const url = `https://www.oplata.info/asp2/pay.asp?id_d=${product.id}&ai=${product.sellerId || ""}&lang=${lang === "ru" ? "ru-RU" : "en-US"}&failpage=${encodeURIComponent(failUrl)}&ReturnURL=${encodeURIComponent(successUrl)}&successurl=${encodeURIComponent(successUrl)}&_ow=${encodeURIComponent(successUrl)}`;
+        const url = `https://www.oplata.info/asp2/pay.asp?id_d=${product.id}&ai=${product.sellerId || ""}&lang=${lang === "ru" ? "ru-RU" : "en-US"}`;
         window.open(url, "_blank");
         setPurchased(true);
       }
     } catch (err) {
-      console.error("Buy error:", err);
       setBuyError("Something went wrong. Please try again.");
     } finally {
       setBuying(false);
@@ -247,7 +180,7 @@ function ProductPage() {
                 {product.reviews?.length > 0 && <><span>•</span><span style={{ color: v.accent, cursor: "pointer" }} onClick={() => setActiveTab("reviews")}>{lang === "ru" ? "Отзывы" : "Reviews"} {product.reviews.length}+</span></>}
               </div>
 
-              {/* ═══ OPTIONS ═══ */}
+              {/* OPTIONS */}
               {hasOpts && (
                 <div style={{ background: v.surface, border: `1px solid ${v.border}`, borderRadius: 12, padding: "18px 20px", marginBottom: 20 }}>
                   {product.options.map((opt, oi) => {
@@ -256,10 +189,7 @@ function ProductPage() {
                       <div key={opt.id} style={{ marginBottom: oi < product.options.length - 1 ? 18 : 0 }}>
                         <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: v.tx, marginBottom: 10 }}>
                           {opt.name} {opt.required && <span style={{ color: v.red }}>*</span>}
-                          {opt.comment && <span style={{ fontWeight: 400, fontSize: 12, color: v.tx3, marginLeft: 6 }}>({opt.comment})</span>}
                         </label>
-
-                        {/* Horizontal chips for radio/select */}
                         {(opt.type === "radio" || opt.type === "select") && opt.variants?.length > 0 && (
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                             {opt.variants.map(va => {
@@ -267,13 +197,7 @@ function ProductPage() {
                               const mod = fmtMod(va, cur);
                               return (
                                 <button key={va.id} onClick={() => { setOptionValues(prev => ({ ...prev, [opt.id]: va.id })); setValidationErrors(prev => { const n = { ...prev }; delete n[opt.id]; return n; }); }}
-                                  style={{
-                                    height: 38, padding: "0 16px", borderRadius: 10, cursor: "pointer",
-                                    border: `2px solid ${isSel ? v.accent : hasError ? v.red : v.border}`,
-                                    background: isSel ? (dark ? v.accent + "15" : v.accent + "0a") : "transparent",
-                                    color: isSel ? v.accent : v.tx, fontSize: 13, fontWeight: 600,
-                                    display: "flex", alignItems: "center", gap: 6, transition: "all .15s", whiteSpace: "nowrap",
-                                  }}>
+                                  style={{ height: 38, padding: "0 16px", borderRadius: 10, cursor: "pointer", border: `2px solid ${isSel ? v.accent : hasError ? v.red : v.border}`, background: isSel ? (dark ? v.accent + "15" : v.accent + "0a") : "transparent", color: isSel ? v.accent : v.tx, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, transition: "all .15s", whiteSpace: "nowrap" }}>
                                   {va.name}
                                   {mod && <span style={{ fontSize: 11, fontWeight: 700, color: v.tx3 }}>{mod}</span>}
                                   {isSel && <span style={{ fontSize: 10, color: v.green, fontWeight: 500 }}>{lang === "ru" ? "выбрано" : "Selected"}</span>}
@@ -282,33 +206,12 @@ function ProductPage() {
                             })}
                           </div>
                         )}
-
-                        {/* Text/textarea input — always type="text" so user can see what they type */}
                         {(opt.type === "text" || opt.type === "textarea" || opt.type === "input") && (
-                          opt.type === "textarea" ? (
-                            <textarea value={optionValues[opt.id] || ""} onChange={e => { setOptionValues(prev => ({ ...prev, [opt.id]: e.target.value })); setValidationErrors(prev => { const n = { ...prev }; delete n[opt.id]; return n; }); }}
-                              placeholder={opt.comment || opt.name} rows={3}
-                              style={{ width: "100%", maxWidth: 480, padding: "10px 14px", border: `1px solid ${hasError ? v.red : v.border}`, borderRadius: 10, background: v.surface2, color: v.tx, fontSize: 13, outline: "none", resize: "vertical" }}
-                              onFocus={e => e.target.style.borderColor = v.accent} onBlur={e => e.target.style.borderColor = hasError ? v.red : v.border} />
-                          ) : (
-                            <input type="text"
-                              value={optionValues[opt.id] || ""} onChange={e => { setOptionValues(prev => ({ ...prev, [opt.id]: e.target.value })); setValidationErrors(prev => { const n = { ...prev }; delete n[opt.id]; return n; }); }}
-                              placeholder={opt.comment || opt.name}
-                              style={{ width: "100%", maxWidth: 480, height: 42, padding: "0 14px", border: `1px solid ${hasError ? v.red : v.border}`, borderRadius: 10, background: v.surface2, color: v.tx, fontSize: 13, outline: "none" }}
-                              onFocus={e => e.target.style.borderColor = v.accent} onBlur={e => e.target.style.borderColor = hasError ? v.red : v.border} />
-                          )
+                          <input type="text" value={optionValues[opt.id] || ""} onChange={e => { setOptionValues(prev => ({ ...prev, [opt.id]: e.target.value })); setValidationErrors(prev => { const n = { ...prev }; delete n[opt.id]; return n; }); }}
+                            placeholder={opt.comment || opt.name}
+                            style={{ width: "100%", maxWidth: 480, height: 42, padding: "0 14px", border: `1px solid ${hasError ? v.red : v.border}`, borderRadius: 10, background: v.surface2, color: v.tx, fontSize: 13, outline: "none" }}
+                            onFocus={e => e.target.style.borderColor = v.accent} onBlur={e => e.target.style.borderColor = hasError ? v.red : v.border} />
                         )}
-
-                        {opt.type === "checkbox" && opt.variants?.map(va => (
-                          <label key={va.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: v.tx, marginTop: 4 }}>
-                            <input type="checkbox" checked={!!optionValues[`${opt.id}_${va.id}`]}
-                              onChange={e => setOptionValues(prev => ({ ...prev, [`${opt.id}_${va.id}`]: e.target.checked }))}
-                              style={{ width: 16, height: 16, accentColor: v.accent }} />
-                            {va.name}
-                          </label>
-                        ))}
-
-                        {/* Validation error message */}
                         {hasError && <div style={{ fontSize: 12, color: v.red, marginTop: 6 }}>{hasError}</div>}
                       </div>
                     );
@@ -319,12 +222,7 @@ function ProductPage() {
               {/* TABS */}
               <div style={{ display: "flex", gap: 4, background: v.surface2, borderRadius: "12px 12px 0 0", padding: "6px 6px 0", border: `1px solid ${v.border}`, borderBottom: "none" }}>
                 {tabDefs.map(tb => (
-                  <button key={tb.id} onClick={() => setActiveTab(tb.id)} style={{
-                    flex: 1, height: 42, border: "none", borderRadius: "8px 8px 0 0",
-                    background: activeTab === tb.id ? v.surface : "transparent", color: activeTab === tb.id ? v.tx : v.tx3,
-                    fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                    borderBottom: activeTab === tb.id ? `2px solid ${v.accent}` : "2px solid transparent",
-                  }}>
+                  <button key={tb.id} onClick={() => setActiveTab(tb.id)} style={{ flex: 1, height: 42, border: "none", borderRadius: "8px 8px 0 0", background: activeTab === tb.id ? v.surface : "transparent", color: activeTab === tb.id ? v.tx : v.tx3, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, borderBottom: activeTab === tb.id ? `2px solid ${v.accent}` : "2px solid transparent" }}>
                     {tb.icon(activeTab === tb.id ? v.accent : v.tx3)}
                     <span className="tab-label">{tb.label}</span>
                     {tb.count > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10, background: v.surface3, color: v.tx3 }}>{tb.count}+</span>}
@@ -378,20 +276,6 @@ function ProductPage() {
                     </div></div>}
                 </div>
                 <div style={{ padding: "16px 22px 20px" }}>
-                  {/* Buyer email */}
-                  <div style={{ marginBottom: 14 }}>
-                    <label style={{ display: "block", fontSize: 12, color: v.tx3, marginBottom: 5 }}>
-                      {lang === "ru" ? "Ваш email" : "Your email"} <span style={{ color: v.red }}>*</span>
-                    </label>
-                    <input type="email" value={buyerEmail} onChange={e => { setBuyerEmail(e.target.value); setValidationErrors(prev => { const n = { ...prev }; delete n._email; return n; }); }}
-                      placeholder={lang === "ru" ? "email@example.com" : "email@example.com"}
-                      style={{ width: "100%", height: 40, padding: "0 12px", border: `1px solid ${validationErrors._email ? v.red : v.border}`, borderRadius: 8, background: v.surface2, color: v.tx, fontSize: 13, outline: "none" }}
-                      onFocus={e => e.target.style.borderColor = v.accent} onBlur={e => e.target.style.borderColor = validationErrors._email ? v.red : v.border}
-                    />
-                    {validationErrors._email && <div style={{ fontSize: 11, color: v.red, marginTop: 4 }}>{validationErrors._email}</div>}
-                    <div style={{ fontSize: 10, color: v.tx3, marginTop: 4 }}>{lang === "ru" ? "Для отслеживания заказа" : "To track your order"}</div>
-                  </div>
-
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                     <span style={{ fontSize: 12, color: v.tx3 }}>{lang === "ru" ? "Кол-во" : "Qty"}</span>
                     <div style={{ display: "flex", border: `1px solid ${v.border}`, borderRadius: 8, overflow: "hidden" }}>
@@ -403,34 +287,18 @@ function ProductPage() {
                     {quantity > 1 && <span style={{ fontSize: 12, color: v.tx3, marginLeft: "auto" }}>= {cur.symbol}{(adjustedPrice * quantity).toFixed(2)}</span>}
                   </div>
 
-                  {/* Buy error message */}
-                  {buyError && <div style={{ padding: "10px 14px", background: v.redBg, borderRadius: 8, marginBottom: 12, fontSize: 12, color: v.red }}>{buyError}</div>}
+                  {buyError && <div style={{ padding: "10px 14px", background: dark ? "#1a1520" : "#fef2f2", borderRadius: 8, marginBottom: 12, fontSize: 12, color: v.red }}>{buyError}</div>}
 
-                  {/* Purchased banner */}
                   {purchased && (
-                    <div style={{ padding: "14px 16px", background: dark ? "#0d2818" : "#dcfce7", border: `1px solid ${v.green}30`, borderRadius: 10, marginBottom: 12 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: v.green, marginBottom: 6 }}>
-                        {lang === "ru" ? "✅ Оплата открыта в новой вкладке" : "✅ Payment opened in new tab"}
-                      </div>
-                      <p style={{ fontSize: 12, color: v.tx2, lineHeight: 1.5, marginBottom: 8 }}>
-                        {lang === "ru"
-                          ? "Завершите оплату. После оплаты скопируйте уникальный код из страницы заказа Digiseller."
-                          : "Complete the payment. After paying, copy the unique code from the Digiseller order page."}
-                      </p>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        <a href="/orders" style={{ fontSize: 12, color: v.accent, textDecoration: "none", fontWeight: 600 }}>
-                          📦 {lang === "ru" ? "Мои заказы — вставьте код для активации" : "My Orders — paste your code to activate"}
-                        </a>
-                        <a href="/" style={{ fontSize: 12, color: v.tx3, textDecoration: "none" }}>
-                          ← {lang === "ru" ? "Продолжить покупки" : "Continue shopping"}
-                        </a>
-                      </div>
+                    <div style={{ padding: "12px 14px", background: dark ? "#0d2818" : "#dcfce7", border: `1px solid #22c55e30`, borderRadius: 10, marginBottom: 12, fontSize: 12, color: v.tx2, lineHeight: 1.5 }}>
+                      <span style={{ fontWeight: 700, color: v.green }}>✅ {lang === "ru" ? "Оплата открыта в новой вкладке" : "Payment opened in new tab"}</span><br/>
+                      {lang === "ru" ? "Завершите оплату. После оплаты вы получите товар на странице Digiseller." : "Complete the payment. You'll receive your product on the Digiseller page."}
                     </div>
                   )}
 
                   <button onClick={handleBuyNow} disabled={buying || product.inStock === false} style={{ width: "100%", height: 48, border: "none", borderRadius: 10, background: product.inStock === false ? v.surface3 : buying ? "#666" : "linear-gradient(135deg,#3b82f6,#2563eb)", color: product.inStock === false ? v.tx3 : "#fff", fontSize: 15, fontWeight: 700, cursor: (buying || product.inStock === false) ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: product.inStock === false ? "none" : "0 4px 14px rgba(37,99,235,.35)", transition: "transform .1s,opacity .15s", opacity: buying ? .7 : 1 }}>
                     {product.inStock === false ? (lang === "ru" ? "Нет в наличии" : "Out of Stock") : buying ? (lang === "ru" ? "Обработка..." : "Processing...") : t.buyNow}
-                    {!buying && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>}
+                    {!buying && product.inStock !== false && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>}
                   </button>
                 </div>
                 <div style={{ padding: "0 22px 18px" }}><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>

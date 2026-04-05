@@ -28,14 +28,6 @@ export default function Header({ onSearch, storeName = "KeyVault" }) {
         </form>
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-          {/* My Orders link */}
-          <a href="/orders" style={{ height: 34, padding: "0 12px", borderRadius: 8, border: `1px solid ${v.border}`, background: "transparent", color: v.tx2, textDecoration: "none", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 5, transition: "all .15s" }}
-            onMouseEnter={e => { e.currentTarget.style.background = v.surface3; e.currentTarget.style.color = v.tx; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = v.tx2; }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M16 2v4M8 2v4M2 10h20" /></svg>
-            <span className="lang-label">{lang === "ru" ? "Заказы" : "Orders"}</span>
-          </a>
-
           {/* Language Switcher */}
           <div style={{ display: "flex", borderRadius: 8, border: `1px solid ${v.border}`, overflow: "hidden" }}>
             <button
