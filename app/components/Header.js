@@ -28,6 +28,14 @@ export default function Header({ onSearch, storeName = "KeyVault" }) {
         </form>
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+          {/* My Orders — redirects to Digiseller */}
+          <a href="https://www.digiseller.market/purchases/" target="_blank" rel="noopener noreferrer" style={{ height: 34, padding: "0 12px", borderRadius: 8, border: `1px solid ${v.border}`, background: "transparent", color: v.tx2, textDecoration: "none", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 5, transition: "all .15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = v.surface3; e.currentTarget.style.color = v.tx; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = v.tx2; }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h6"/><path d="M12 11h4"/><path d="M12 15h2"/><path d="M18 21l3-3-3-3"/><path d="M15 18h6"/></svg>
+            <span className="lang-label">{lang === "ru" ? "Заказы" : "Orders"}</span>
+          </a>
+
           {/* Language Switcher */}
           <div style={{ display: "flex", borderRadius: 8, border: `1px solid ${v.border}`, overflow: "hidden" }}>
             <button
