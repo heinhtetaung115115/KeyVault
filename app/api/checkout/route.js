@@ -1,48 +1,63 @@
 /**
  * POST /api/checkout
  * 
- * Body: { productIds: [123, 456] }
- * Returns payment URL(s) for the given products
+ * Saves order to Supabase when buyer clicks "Buy now".
+ * Called before redirecting to Digiseller payment page.
+ * 
+ * Body: { productId, productName, price, currency, buyerEmail, 
+ *          options, sellerId, sellerName, idPo }
+ * 
+ * The order is saved with status "pending" and updated to "paid" 
+ * when the webhook fires (or buyer links their unique code).
  */
-import { getPaymentUrl, getCartPaymentUrl } from "../../lib/digiseller";
+import { supabase } from "../../lib/supabase";
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { productIds, lang = "en" } = body;
+    const {
+      productId, productName, price, currency,
+      buyerEmail, options, sellerId, sellerName, idPo,
+    } = body;
 
-    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
-      return Response.json(
-        { ok: false, error: "productIds array is required" },
-        { status: 400 }
-      );
+    if (!buyerEmail || !productId) {
+      return Response.json({ ok: false, error: "Email and product ID are required" }, { status: 400 });
     }
 
-    if (productIds.length === 1) {
-      // Single product — direct payment link
-      const url = getPaymentUrl(productIds[0], lang);
-      return Response.json({ ok: true, paymentUrl: url, type: "single" });
+    if (!supabase) {
+      return Response.json({ ok: false, error: "Database not configured" }, { status: 500 });
     }
 
-    // Multiple products — cart payment
-    const url = getCartPaymentUrl(productIds, lang);
-    // Also return individual URLs as fallback
-    const individualUrls = productIds.map((id) => ({
-      id,
-      url: getPaymentUrl(id, lang),
-    }));
+    const order = {
+      invoice_id: idPo ? `po_${idPo}` : `pre_${productId}_${Date.now()}`,
+      product_id: parseInt(productId, 10),
+      product_name: productName || `Product #${productId}`,
+      buyer_email: buyerEmail.toLowerCase().trim(),
+      amount: parseFloat(price || 0),
+      currency: currency || "USD",
+      seller_id: String(sellerId || ""),
+      seller_name: sellerName || "",
+      product_options: options || null,
+      status: "pending",
+      paid_at: new Date().toISOString(),
+    };
+
+    const { data: inserted, error } = await supabase
+      .from("orders")
+      .insert(order)
+      .select();
+
+    if (error) {
+      console.error("Checkout save error:", error);
+      return Response.json({ ok: false, error: "Failed to save order" }, { status: 500 });
+    }
 
     return Response.json({
       ok: true,
-      paymentUrl: url,
-      individualUrls,
-      type: "cart",
+      orderId: inserted?.[0]?.id,
     });
   } catch (error) {
-    console.error("Checkout API error:", error);
-    return Response.json(
-      { ok: false, error: error.message },
-      { status: 500 }
-    );
+    console.error("Checkout error:", error);
+    return Response.json({ ok: false, error: error.message }, { status: 500 });
   }
 }

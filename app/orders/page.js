@@ -20,6 +20,9 @@ function OrdersPage() {
   // Chat state
   const [chatMsg, setChatMsg] = useState("");
   const [chatSending, setChatSending] = useState(false);
+  const [linkCode, setLinkCode] = useState("");
+  const [linking, setLinking] = useState(false);
+  const [linkMsg, setLinkMsg] = useState("");
 
   const lookupOrders = async (e) => {
     e?.preventDefault();
@@ -105,6 +108,48 @@ function OrdersPage() {
             {loading ? "..." : T.lookup}
           </button>
         </form>
+
+        {/* Link order with unique code */}
+        {email && (
+          <div style={{ background: v.surface, border: `1px solid ${v.border}`, borderRadius: 12, padding: "16px 20px", marginBottom: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: v.tx, marginBottom: 4 }}>
+              {lang === "ru" ? "🔗 Привязать заказ по уникальному коду" : "🔗 Link order with unique code"}
+            </div>
+            <p style={{ fontSize: 12, color: v.tx3, marginBottom: 10, lineHeight: 1.4 }}>
+              {lang === "ru"
+                ? "Вставьте уникальный код из страницы заказа Digiseller, чтобы привязать заказ к вашему email."
+                : "Paste the unique code from your Digiseller order page to link it to your account."}
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input type="text" value={linkCode} onChange={e => setLinkCode(e.target.value)}
+                placeholder={lang === "ru" ? "Уникальный код (16 символов)" : "Unique code (16 characters)"}
+                style={{ flex: 1, height: 40, padding: "0 14px", border: `1px solid ${v.border}`, borderRadius: 8, background: v.surface2, color: v.tx, fontSize: 13, outline: "none", fontFamily: "monospace" }}
+              />
+              <button disabled={linking || !linkCode.trim()} onClick={async () => {
+                setLinking(true); setLinkMsg("");
+                try {
+                  const res = await fetch("/api/orders/link", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: email.trim(), uniqueCode: linkCode.trim() }),
+                  });
+                  const data = await res.json();
+                  if (data.ok) {
+                    setLinkMsg(lang === "ru" ? "✅ Заказ привязан!" : "✅ Order linked!");
+                    setLinkCode("");
+                    lookupOrders(); // Refresh orders
+                  } else {
+                    setLinkMsg(data.error || "Failed to link order");
+                  }
+                } catch (e) { setLinkMsg("Error: " + e.message); }
+                finally { setLinking(false); }
+              }} style={{ height: 40, padding: "0 18px", borderRadius: 8, border: "none", background: (linking || !linkCode.trim()) ? v.surface3 : v.accent, color: (linking || !linkCode.trim()) ? v.tx3 : "#fff", fontSize: 12, fontWeight: 700, cursor: (linking || !linkCode.trim()) ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
+                {linking ? "..." : lang === "ru" ? "Привязать" : "Link"}
+              </button>
+            </div>
+            {linkMsg && <div style={{ fontSize: 12, marginTop: 8, color: linkMsg.startsWith("✅") ? v.green : v.red }}>{linkMsg}</div>}
+          </div>
+        )}
 
         {error && <div style={{ padding: "14px 18px", background: dark ? "#1a1520" : "#fef2f2", border: `1px solid ${v.red}25`, borderRadius: 10, marginBottom: 20, fontSize: 13, color: v.red }}>{error}</div>}
 

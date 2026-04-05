@@ -58,6 +58,7 @@ function ProductPage() {
   const [buyError, setBuyError] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
   const [purchased, setPurchased] = useState(false);
+  const [buyerEmail, setBuyerEmail] = useState("");
 
   useEffect(() => {
     if (!productId) return;
@@ -86,6 +87,11 @@ function ProductPage() {
   // Validate required fields
   const validate = () => {
     const errs = {};
+    // Validate email
+    if (!buyerEmail.trim() || !buyerEmail.includes("@")) {
+      errs._email = lang === "ru" ? "Введите ваш email" : "Please enter your email";
+    }
+    // Validate product options
     (product?.options || []).forEach(opt => {
       if (!opt.required) return;
       const val = optionValues[opt.id];
@@ -134,6 +140,20 @@ function ProductPage() {
         const data = await res.json();
 
         if (data.ok && data.id_po) {
+          // Save order to Supabase BEFORE opening payment
+          try {
+            await fetch("/api/checkout", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                productId: product.id, productName: product.name,
+                price: adjustedPrice, currency: cur.code,
+                buyerEmail, options: opts, sellerId: product.sellerId,
+                sellerName: product.sellerName || "", idPo: data.id_po,
+              }),
+            });
+          } catch (e) { console.error("Save order error:", e); }
+
           const ai = data.affiliateId || product.sellerId || "";
           const successUrl = window.location.origin + "/order/success";
           const failUrl = window.location.origin + "/order/failed";
@@ -155,6 +175,20 @@ function ProductPage() {
           }
         }
       } else {
+        // Save order to Supabase
+        try {
+          await fetch("/api/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              productId: product.id, productName: product.name,
+              price: adjustedPrice, currency: cur.code,
+              buyerEmail, sellerId: product.sellerId,
+              sellerName: product.sellerName || "",
+            }),
+          });
+        } catch (e) { console.error("Save order error:", e); }
+
         const successUrl = window.location.origin + "/order/success";
         const failUrl = window.location.origin + "/order/failed";
         const url = `https://www.oplata.info/asp2/pay.asp?id_d=${product.id}&ai=${product.sellerId || ""}&lang=${lang === "ru" ? "ru-RU" : "en-US"}&failpage=${encodeURIComponent(failUrl)}&ReturnURL=${encodeURIComponent(successUrl)}&successurl=${encodeURIComponent(successUrl)}&_ow=${encodeURIComponent(successUrl)}`;
@@ -344,6 +378,20 @@ function ProductPage() {
                     </div></div>}
                 </div>
                 <div style={{ padding: "16px 22px 20px" }}>
+                  {/* Buyer email */}
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ display: "block", fontSize: 12, color: v.tx3, marginBottom: 5 }}>
+                      {lang === "ru" ? "Ваш email" : "Your email"} <span style={{ color: v.red }}>*</span>
+                    </label>
+                    <input type="email" value={buyerEmail} onChange={e => { setBuyerEmail(e.target.value); setValidationErrors(prev => { const n = { ...prev }; delete n._email; return n; }); }}
+                      placeholder={lang === "ru" ? "email@example.com" : "email@example.com"}
+                      style={{ width: "100%", height: 40, padding: "0 12px", border: `1px solid ${validationErrors._email ? v.red : v.border}`, borderRadius: 8, background: v.surface2, color: v.tx, fontSize: 13, outline: "none" }}
+                      onFocus={e => e.target.style.borderColor = v.accent} onBlur={e => e.target.style.borderColor = validationErrors._email ? v.red : v.border}
+                    />
+                    {validationErrors._email && <div style={{ fontSize: 11, color: v.red, marginTop: 4 }}>{validationErrors._email}</div>}
+                    <div style={{ fontSize: 10, color: v.tx3, marginTop: 4 }}>{lang === "ru" ? "Для отслеживания заказа" : "To track your order"}</div>
+                  </div>
+
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                     <span style={{ fontSize: 12, color: v.tx3 }}>{lang === "ru" ? "Кол-во" : "Qty"}</span>
                     <div style={{ display: "flex", border: `1px solid ${v.border}`, borderRadius: 8, overflow: "hidden" }}>
@@ -366,11 +414,14 @@ function ProductPage() {
                       </div>
                       <p style={{ fontSize: 12, color: v.tx2, lineHeight: 1.5, marginBottom: 8 }}>
                         {lang === "ru"
-                          ? "Завершите оплату в открывшейся вкладке. После оплаты вы получите товар."
-                          : "Complete the payment in the opened tab. After payment you will receive your product."}
+                          ? "Завершите оплату. После оплаты скопируйте уникальный код из страницы заказа Digiseller."
+                          : "Complete the payment. After paying, copy the unique code from the Digiseller order page."}
                       </p>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        <a href="/" style={{ fontSize: 12, color: v.accent, textDecoration: "none", fontWeight: 600 }}>
+                        <a href="/orders" style={{ fontSize: 12, color: v.accent, textDecoration: "none", fontWeight: 600 }}>
+                          📦 {lang === "ru" ? "Мои заказы — вставьте код для активации" : "My Orders — paste your code to activate"}
+                        </a>
+                        <a href="/" style={{ fontSize: 12, color: v.tx3, textDecoration: "none" }}>
                           ← {lang === "ru" ? "Продолжить покупки" : "Continue shopping"}
                         </a>
                       </div>
