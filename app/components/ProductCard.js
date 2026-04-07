@@ -1,14 +1,14 @@
 'use client';
 import { useStore } from './StoreContext';
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, onClick }) {
   const { locale, t } = useStore();
   const name = locale === 'ru' && product.name_ru ? product.name_ru : product.name;
   const stock = product.stock_count ?? 0;
   const isAuto = product.delivery_type === 'auto';
 
   return (
-    <a href={`/product/${product.id}`} className="product-card" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+    <div className="product-card" onClick={() => onClick?.(product)}>
       {/* Image */}
       <div style={{
         width: '100%',
@@ -74,6 +74,6 @@ export default function ProductCard({ product }) {
           )}
         </div>
       </div>
-    </a>
+    </div>
   );
 }

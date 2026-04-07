@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useStore } from './components/StoreContext';
 import Header from './components/Header';
 import ProductCard from './components/ProductCard';
+import ProductModal from './components/ProductModal';
 import CartDrawer from './components/CartDrawer';
 import Toast from './components/Toast';
 import Footer from './components/Footer';
@@ -16,6 +17,7 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeSort, setActiveSort] = useState('recommended');
   const [search, setSearch] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -153,6 +155,7 @@ export default function Home() {
               <ProductCard
                 key={product.id}
                 product={product}
+                onClick={setSelectedProduct}
               />
             ))}
           </div>
@@ -160,6 +163,14 @@ export default function Home() {
       </main>
 
       <Footer />
+
+      {/* Product modal */}
+      {selectedProduct && (
+        <ProductModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+        />
+      )}
     </>
   );
 }
