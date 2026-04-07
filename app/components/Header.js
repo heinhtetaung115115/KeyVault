@@ -1,79 +1,132 @@
-"use client";
+'use client';
+import { useState } from 'react';
+import { useStore } from './StoreContext';
 
-import { useState } from "react";
-import { useStore } from "./StoreContext";
+export default function Header({ onSearch }) {
+  const { theme, toggleTheme, locale, toggleLocale, cart, setCartOpen, t } = useStore();
+  const [search, setSearch] = useState('');
 
-export default function Header({ onSearch, storeName = "KeyVault" }) {
-  const { dark, toggleTheme, v, lang, switchLang, cur } = useStore();
-  const [query, setQuery] = useState("");
-
-  const handleSubmit = (e) => { e.preventDefault(); onSearch?.(query); };
+  const handleSearch = (e) => {
+    const val = e.target.value;
+    setSearch(val);
+    onSearch?.(val);
+  };
 
   return (
-    <header style={{ position: "sticky", top: 0, zIndex: 100, background: v.headerBg, backdropFilter: "blur(14px) saturate(1.6)", borderBottom: `1px solid ${v.border}` }}>
-      <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 20px", height: 58, display: "flex", alignItems: "center", gap: 14 }}>
+    <header style={{
+      position: 'sticky', top: 0, zIndex: 50,
+      background: 'var(--bg-primary)',
+      borderBottom: '1px solid var(--border)',
+      backdropFilter: 'blur(12px)',
+    }}>
+      <div style={{
+        maxWidth: 1200, margin: '0 auto',
+        padding: '12px 20px',
+        display: 'flex', alignItems: 'center', gap: 16,
+        flexWrap: 'wrap',
+      }}>
         {/* Logo */}
-        <a href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none", color: v.tx, flexShrink: 0 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,#3b82f6,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 13, fontWeight: 800 }}>K</div>
-          <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: -.7 }}>{storeName}</span>
+        <a href="/" style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          textDecoration: 'none', color: 'var(--text-primary)',
+          fontWeight: 700, fontSize: 20,
+          flexShrink: 0,
+        }}>
+          <span style={{
+            background: 'var(--brand)', color: 'white',
+            width: 32, height: 32, borderRadius: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16, fontWeight: 700,
+          }}>K</span>
+          KeyVault
         </a>
 
         {/* Search */}
-        <form onSubmit={handleSubmit} className="header-search" style={{ flex: 1, maxWidth: 400, position: "relative" }}>
-          <svg style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: v.tx3, pointerEvents: "none" }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7.5" /><path d="m20 20-3.5-3.5" /></svg>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={lang === "ru" ? "Поиск игр, ключей, карт..." : "Search games, keys, cards..."}
-            style={{ width: "100%", height: 38, paddingLeft: 38, paddingRight: 14, border: `1px solid ${v.border}`, borderRadius: 10, background: v.surface, color: v.tx, fontSize: 13, outline: "none", transition: "border-color .2s" }}
-            onFocus={(e) => (e.target.style.borderColor = v.accent)} onBlur={(e) => (e.target.style.borderColor = v.border)}
+        <div style={{ flex: 1, minWidth: 200, maxWidth: 400 }}>
+          <input
+            type="search"
+            placeholder={t('search_placeholder')}
+            value={search}
+            onChange={handleSearch}
+            style={{
+              width: '100%',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              padding: '8px 14px',
+              fontSize: 14,
+              color: 'var(--text-primary)',
+              outline: 'none',
+            }}
           />
-        </form>
+        </div>
 
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-          {/* My Orders — redirects to Digiseller */}
-          <a href="https://www.digiseller.market/purchases/" target="_blank" rel="noopener noreferrer" style={{ height: 34, padding: "0 12px", borderRadius: 8, border: `1px solid ${v.border}`, background: "transparent", color: v.tx2, textDecoration: "none", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 5, transition: "all .15s" }}
-            onMouseEnter={e => { e.currentTarget.style.background = v.surface3; e.currentTarget.style.color = v.tx; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = v.tx2; }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2h6"/><path d="M12 11h4"/><path d="M12 15h2"/><path d="M18 21l3-3-3-3"/><path d="M15 18h6"/></svg>
-            <span className="lang-label">{lang === "ru" ? "Заказы" : "Orders"}</span>
-          </a>
+        {/* Right controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+          {/* Orders link */}
+          <a href="/orders" style={{
+            padding: '8px 12px', borderRadius: 8,
+            fontSize: 14, fontWeight: 500,
+            color: 'var(--text-secondary)',
+            textDecoration: 'none',
+            border: '1px solid var(--border)',
+            transition: 'all 0.2s',
+          }}>{t('orders')}</a>
 
-          {/* Language Switcher */}
-          <div style={{ display: "flex", borderRadius: 8, border: `1px solid ${v.border}`, overflow: "hidden" }}>
-            <button
-              onClick={() => switchLang("en")}
-              style={{
-                height: 34, padding: "0 10px", border: "none",
-                background: lang === "en" ? v.surface3 : "transparent",
-                color: lang === "en" ? v.tx : v.tx3,
-                fontSize: 12, fontWeight: 600, cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 5, transition: "all .15s",
-              }}
-            >
-              <span style={{ fontSize: 14 }}>🇬🇧</span>
-              <span className="lang-label">EN</span>
-            </button>
-            <button
-              onClick={() => switchLang("ru")}
-              style={{
-                height: 34, padding: "0 10px", border: "none", borderLeft: `1px solid ${v.border}`,
-                background: lang === "ru" ? v.surface3 : "transparent",
-                color: lang === "ru" ? v.tx : v.tx3,
-                fontSize: 12, fontWeight: 600, cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 5, transition: "all .15s",
-              }}
-            >
-              <span style={{ fontSize: 14 }}>🇷🇺</span>
-              <span className="lang-label">RU</span>
-            </button>
-          </div>
+          {/* Language toggle */}
+          <button onClick={toggleLocale} style={{
+            padding: '6px 12px', borderRadius: 8,
+            fontSize: 13, fontWeight: 500,
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 4,
+          }}>
+            {locale === 'en' ? '🇬🇧EN' : '🇷🇺RU'}
+          </button>
 
           {/* Currency display */}
-          <span style={{ fontSize: 12, fontWeight: 700, color: v.tx2, padding: "0 6px", display: "flex", alignItems: "center", gap: 3 }}>
-            {cur.symbol} {cur.code}
-          </span>
+          <span style={{
+            padding: '6px 10px', borderRadius: 8,
+            fontSize: 13, fontWeight: 500,
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-secondary)',
+          }}>$ USD</span>
 
           {/* Theme toggle */}
-          <button onClick={toggleTheme} style={{ width: 36, height: 36, borderRadius: 8, border: `1px solid ${v.border}`, background: "transparent", color: v.tx2, cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {dark ? "☀️" : "🌙"}
+          <button onClick={toggleTheme} style={{
+            width: 36, height: 36, borderRadius: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer', fontSize: 16,
+          }}>
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+
+          {/* Cart button */}
+          <button onClick={() => setCartOpen(true)} style={{
+            position: 'relative',
+            width: 36, height: 36, borderRadius: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: cart.length > 0 ? 'var(--brand)' : 'var(--bg-secondary)',
+            border: cart.length > 0 ? 'none' : '1px solid var(--border)',
+            color: cart.length > 0 ? 'white' : 'var(--text-secondary)',
+            cursor: 'pointer', fontSize: 16,
+          }}>
+            🛒
+            {cart.length > 0 && (
+              <span style={{
+                position: 'absolute', top: -4, right: -4,
+                background: 'var(--danger)', color: 'white',
+                fontSize: 10, fontWeight: 700,
+                width: 18, height: 18, borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>{cart.length}</span>
+            )}
           </button>
         </div>
       </div>

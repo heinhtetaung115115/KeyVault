@@ -1,204 +1,156 @@
-# KeyVault — Digiseller Storefront
+# KeyVault v2 — Self-Hosted Digital Goods Store
 
-A custom Next.js storefront for selling digital keys and gift cards via the **Digiseller affiliate program**. Connects to the Digiseller API for real product data, categories, and payment processing.
+A fully self-hosted Next.js store for selling digital keys, gift cards, and codes. Replaces the Digiseller affiliate model with your own **Supabase** database, **Stripe** (cards), and **NOWPayments** (crypto).
 
 ---
 
-## Quick Start
+## Features
 
-### 1. Install dependencies
+- **Storefront**: Dark/light theme, EN/RU localization, category chips, sort tabs, trust badges, product cards, search
+- **Admin Dashboard** (`/admin`): Create/edit products, upload keys in bulk, manage orders, deliver content manually
+- **Auto-delivery**: Pre-uploaded keys are instantly delivered after payment (race-safe with `FOR UPDATE SKIP LOCKED`)
+- **Manual delivery**: Admin delivers content through the dashboard after payment
+- **Stripe Checkout**: Visa/Mastercard via Stripe Checkout sessions
+- **NOWPayments**: Crypto payments via invoices
+- **Buyer Order Page** (`/order/[id]`): Shows delivered keys/codes after payment, with copy button
+- **Order Lookup** (`/orders`): Buyers find orders by email
+- **Stock Tracking**: Auto-decrements on sale, shows stock count on cards
+
+---
+
+## Architecture
+
+```
+app/
+├── api/
+│   ├── categories/route.js     GET  — list categories
+│   ├── products/route.js       GET  — list products (filter, search, sort)
+│   ├── product/route.js        GET  — single product details
+│   ├── checkout/route.js       POST — create Stripe/crypto checkout
+│   ├── orders/route.js         GET  — order lookup by email or ID
+│   ├── webhook/
+│   │   ├── stripe/route.js     POST — Stripe payment webhook
+│   │   └── nowpayments/route.js POST — NOWPayments IPN webhook
+│   └── admin/
+│       ├── products/route.js   CRUD — manage products
+│       ├── keys/route.js       CRUD — upload/manage keys
+│       ├── orders/route.js     GET  — all orders
+│       └── deliver/route.js    POST — manual delivery
+├── components/
+│   ├── StoreContext.js         Cart, theme, locale state
+│   ├── Header.js               Sticky header with search
+│   ├── ProductCard.js          Product grid card
+│   ├── ProductModal.js         Product detail modal
+│   ├── CartDrawer.js           Slide-out cart
+│   ├── Toast.js                Notifications
+│   ├── Footer.js               Site footer
+│   └── Skeletons.js            Loading skeletons
+├── lib/
+│   ├── supabase.js             Supabase client/admin
+│   ├── i18n.js                 EN/RU translations
+│   └── admin-auth.js           Admin password auth
+├── order/[id]/page.js          Buyer order page
+├── orders/page.js              Order lookup page
+├── admin/page.js               Admin dashboard
+├── globals.css                 Styles + dark/light theme
+├── layout.js                   Root layout
+└── page.js                     Homepage
+```
+
+---
+
+## Setup
+
+### 1. Clone and install
 
 ```bash
+git clone <your-repo>
 cd keyvault
 npm install
 ```
 
-### 2. Configure your Digiseller credentials
+### 2. Create Supabase database
 
-Edit `.env.local` and fill in your real values:
+1. Go to [supabase.com](https://supabase.com) → your project → SQL Editor
+2. Paste and run the contents of `supabase-schema.sql`
+3. This creates all tables, indexes, the `claim_key()` function, and seed categories
 
-```env
-DIGISELLER_SELLER_ID=123456          # Your seller ID
-DIGISELLER_API_KEY=YOUR_API_KEY      # Your API key
-DIGISELLER_AFFILIATE_ID=123456       # Your affiliate ID (usually same as seller ID)
-NEXT_PUBLIC_STORE_NAME=KeyVault      # Your store name
-NEXT_PUBLIC_STORE_TAGLINE=Instant digital keys at the best prices
-NEXT_PUBLIC_CURRENCY=USD
-NEXT_PUBLIC_CURRENCY_SYMBOL=$
+### 3. Configure environment variables
+
+Copy `.env.local.example` to `.env.local` and fill in your values:
+
+```bash
+cp .env.local.example .env.local
 ```
 
-**Where to find your credentials:**
-- Seller ID → https://my.digiseller.com/inside/my_info.asp
-- API Key → https://my.digiseller.com/inside/api_keys.asp
+| Variable | Where to find it |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API (keep secret!) |
+| `STRIPE_SECRET_KEY` | Stripe Dashboard → API Keys |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe Dashboard → API Keys |
+| `STRIPE_WEBHOOK_SECRET` | Stripe Dashboard → Webhooks |
+| `NOWPAYMENTS_API_KEY` | NOWPayments → API Keys |
+| `NOWPAYMENTS_IPN_SECRET` | NOWPayments → IPN Settings |
+| `ADMIN_PASSWORD` | Choose a strong password |
+| `NEXT_PUBLIC_STORE_URL` | Your deployed URL |
 
-### 3. Run the development server
+### 4. Set up webhooks
+
+**Stripe:**
+1. Go to Stripe Dashboard → Developers → Webhooks
+2. Add endpoint: `https://your-domain.com/api/webhook/stripe`
+3. Listen for: `checkout.session.completed`
+4. Copy the signing secret to `STRIPE_WEBHOOK_SECRET`
+
+**NOWPayments:**
+1. Go to NOWPayments → IPN Settings
+2. Set callback URL: `https://your-domain.com/api/webhook/nowpayments`
+3. Copy your IPN secret to `NOWPAYMENTS_IPN_SECRET`
+
+### 5. Run locally
 
 ```bash
 npm run dev
 ```
 
-Open http://localhost:3000 — your store is live!
+Visit:
+- Store: http://localhost:3000
+- Admin: http://localhost:3000/admin
 
----
-
-## Project Architecture
-
-```
-keyvault/
-├── app/
-│   ├── api/                      # Server-side API routes (proxy to Digiseller)
-│   │   ├── token/route.js        #   GET  /api/token — get auth token
-│   │   ├── categories/route.js   #   GET  /api/categories — shop categories
-│   │   ├── products/route.js     #   GET  /api/products — product listing
-│   │   ├── product/route.js      #   GET  /api/product?id=X — product details
-│   │   ├── checkout/route.js     #   POST /api/checkout — generate payment URL
-│   │   └── webhook/route.js      #   POST /api/webhook — Digiseller sale notifications
-│   ├── components/
-│   │   ├── StoreContext.js       #   Cart state management (React Context)
-│   │   ├── Header.js             #   Sticky header with search + cart
-│   │   ├── ProductCard.js        #   Product grid card
-│   │   ├── ProductModal.js       #   Product detail modal with reviews
-│   │   ├── CartDrawer.js         #   Slide-out cart with checkout
-│   │   ├── Toast.js              #   Notification toast
-│   │   ├── Footer.js             #   Site footer
-│   │   └── Skeletons.js          #   Loading skeleton components
-│   ├── lib/
-│   │   └── digiseller.js         #   ★ Core Digiseller API client (SERVER-SIDE ONLY)
-│   ├── globals.css               #   Global styles + Tailwind
-│   ├── layout.js                 #   Root layout
-│   └── page.js                   #   Home page
-├── .env.local                    # Your credentials (DO NOT COMMIT)
-├── next.config.js
-├── tailwind.config.js
-├── postcss.config.js
-└── package.json
-```
-
----
-
-## How It Works
-
-### Data Flow
-
-```
-Browser (React)  →  Next.js API Routes  →  Digiseller API
-                        ↓
-                  Your API key stays
-                  on the server (safe)
-```
-
-1. **Frontend** makes requests to your own `/api/*` routes
-2. **API routes** authenticate with Digiseller using your API key (server-side only)
-3. **Digiseller API** returns product data, which is normalized and sent to the frontend
-4. **Payment** redirects the buyer to Digiseller's checkout page
-5. **Webhook** notifies your server when a sale completes
-
-### Key API Endpoints
-
-| Your Route | Digiseller API | Purpose |
-|---|---|---|
-| `GET /api/categories` | `GET /categories` | Fetch shop categories |
-| `GET /api/products` | `POST /seller-goods` | List all products |
-| `GET /api/products?category_id=X` | `GET /shop/products` | Products by category |
-| `GET /api/products?search=X` | `GET /shop/search` | Search products |
-| `GET /api/product?id=X` | `GET /products/{id}/data` | Product details + reviews |
-| `POST /api/checkout` | (generates URL) | Creates Digiseller payment link |
-| `POST /api/webhook` | (incoming from Digiseller) | Sale notification handler |
-
----
-
-## Purchase Flow
-
-1. Customer browses your store and clicks **"Buy now"** or **"Add to cart → Checkout"**
-2. Your app generates a Digiseller payment URL with your affiliate ID
-3. Customer is redirected to `digiseller.market/asp2/pay.asp?id_d=PRODUCT&ai=YOUR_ID`
-4. Customer pays through Digiseller (credit card, PayPal, crypto, etc.)
-5. Digiseller delivers the digital product to the buyer
-6. Your `/api/webhook` receives a sale notification
-7. You earn your affiliate commission
-
----
-
-## Configuration
-
-### Webhook Setup
-
-After deploying, set up the webhook in your Digiseller dashboard:
-
-1. Go to https://my.digiseller.com/inside/notify_settings.asp?view=url
-2. Set the URL to: `https://your-domain.com/api/webhook`
-3. Save
-
-### Adding Custom Pages
-
-Create new pages in the `app/` directory following Next.js App Router conventions:
-
-```
-app/
-├── about/page.js       →  /about
-├── faq/page.js         →  /faq
-├── contact/page.js     →  /contact
-├── product/[id]/page.js →  /product/123  (dynamic product page)
-```
-
-### Customizing the Design
-
-- **Colors/fonts**: Edit CSS variables in `app/globals.css` and `tailwind.config.js`
-- **Layout**: Modify components in `app/components/`
-- **Store name/tagline**: Change values in `.env.local`
-
----
-
-## Deployment
-
-### Vercel (Recommended)
+### 6. Deploy to Vercel
 
 ```bash
-npm install -g vercel
-vercel
+npx vercel
 ```
 
-Add your environment variables in the Vercel dashboard under Settings → Environment Variables.
-
-### Other Platforms
-
-Works on any Node.js host: Railway, Render, DigitalOcean, AWS, etc.
-
-```bash
-npm run build
-npm start
-```
-
-### Digiseller Free Domain
-
-If Digiseller gave you a free domain, you can point it to your deployed site by updating DNS settings or using a reverse proxy.
+Add all environment variables in Vercel Dashboard → Settings → Environment Variables.
 
 ---
 
-## Extending the Store
+## Usage
 
-### Ideas for next steps:
-- **Product detail pages** (`/product/[id]`) — full SEO-friendly pages
-- **User accounts** — track order history
-- **Promo codes** — use Digiseller's discount API
-- **Telegram bot** — notify yourself on sales
-- **Analytics** — add Google Analytics or Plausible
-- **Multi-language** — Digiseller API supports locales
-- **Custom categories** — organize products your own way
+### Admin Workflow
 
-### Digiseller API Reference
+1. Go to `/admin` and log in with your `ADMIN_PASSWORD`
+2. **Products tab**: Create products with name, price, image, category, delivery type
+3. **Keys tab**: Select a product → paste keys (one per line) → upload
+4. **Orders tab**: View all orders, filter by status, manually deliver content for manual-delivery products
 
-Full documentation: https://my.digiseller.com/inside/api.asp
+### Purchase Flow
 
-Key sections:
-- **Authentication**: `/apilogin` (token-based, SHA256 signing)
-- **Products & Categories**: `/categories`, `/shop/products`, `/products/{id}/data`
-- **Payment**: `/asp2/pay.asp` (redirect-based)
-- **Statistics**: `/seller-last-sales`, `/seller-sells`
-- **Webhooks**: Sale notifications via POST to your URL
+1. Buyer browses store → clicks product → enters email
+2. Chooses payment: Card (Stripe) or Crypto (NOWPayments)
+3. Redirected to payment page
+4. After payment, webhook fires:
+   - **Auto-delivery**: Key is atomically claimed and delivered
+   - **Manual delivery**: Order marked as "paid", admin delivers later
+5. Buyer sees delivered content at `/order/[id]`
+6. Buyer can also look up all orders at `/orders` by email
 
 ---
 
 ## License
 
-MIT — free to use for your Digiseller store.
+MIT

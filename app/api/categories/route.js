@@ -1,18 +1,13 @@
-/**
- * GET /api/categories?lang=en
- */
-import { getCategories, normalizeCategory } from "../../lib/digiseller";
+import { getSupabaseClient } from '../../lib/supabase';
+import { NextResponse } from 'next/server';
 
-export async function GET(request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const lang = searchParams.get("lang") || "en";
+export async function GET() {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .order('sort_order', { ascending: true });
 
-    const data = await getCategories(lang);
-    const categories = (data.categories || data.category || []).map(normalizeCategory);
-    return Response.json({ ok: true, categories });
-  } catch (error) {
-    console.error("Categories API error:", error);
-    return Response.json({ ok: false, error: error.message, categories: [] }, { status: 500 });
-  }
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
 }

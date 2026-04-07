@@ -1,75 +1,144 @@
-"use client";
-
-import { useStore } from "./StoreContext";
-
-const CURRENCY = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || "$";
+'use client';
+import { useState } from 'react';
+import { useStore } from './StoreContext';
 
 export default function CartDrawer() {
-  const { cart, cartTotal, showCart, setShowCart, removeFromCart, clearCart, v, dark } = useStore();
+  const { cart, cartOpen, setCartOpen, removeFromCart, clearCart, cartTotal, locale, t } = useStore();
+  const [email, setEmail] = useState('');
+  const [checking, setChecking] = useState(false);
 
-  if (!showCart) return null;
+  if (!cartOpen) return null;
 
-  const handleCheckout = async () => {
-    if (cart.length === 0) return;
+  const handleCheckout = async (method) => {
+    if (!email || cart.length === 0) return;
+    setChecking(true);
     try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productIds: cart.map((p) => p.id), lang: "en" }),
-      });
-      const data = await res.json();
-      if (data.ok && data.paymentUrl) window.open(data.paymentUrl, "_blank");
-      else if (data.individualUrls?.length) window.open(data.individualUrls[0].url, "_blank");
+      // For cart checkout, we create an order for each item
+      // In production you'd want a multi-item checkout, but for digital goods
+      // each product = separate delivery, so separate orders make sense
+      for (const item of cart) {
+        const res = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product_id: item.id,
+            email,
+            payment_method: method,
+          }),
+        });
+        const data = await res.json();
+        if (data.url) {
+          window.open(data.url, '_blank');
+        }
+      }
+      clearCart();
+      setCartOpen(false);
     } catch (err) {
-      console.error("Checkout error:", err);
+      alert('Checkout error');
     }
+    setChecking(false);
   };
 
   return (
     <>
-      <div onClick={() => setShowCart(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.35)", zIndex: 300 }} />
-      <div style={{ position: "fixed", top: 0, right: 0, width: 370, maxWidth: "92vw", height: "100vh", background: v.surface, borderLeft: `1px solid ${v.border}`, zIndex: 301, display: "flex", flexDirection: "column", animation: "slideIn .25s ease" }}>
-        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${v.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: v.tx }}>Cart ({cart.length})</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {cart.length > 0 && (
-              <button onClick={clearCart} style={{ border: "none", background: "none", color: v.tx3, fontSize: 11, cursor: "pointer" }}>Clear</button>
-            )}
-            <button onClick={() => setShowCart(false)} style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: v.surface2, color: v.tx3, cursor: "pointer", fontSize: 13 }}>✕</button>
-          </div>
+      {/* Overlay */}
+      <div onClick={() => setCartOpen(false)} style={{
+        position: 'fixed', inset: 0, zIndex: 90,
+        background: 'rgba(0,0,0,0.4)',
+      }} />
+
+      {/* Drawer */}
+      <div className="drawer-enter" style={{
+        position: 'fixed', top: 0, right: 0, bottom: 0,
+        width: 380, maxWidth: '100vw', zIndex: 91,
+        background: 'var(--bg-card)',
+        borderLeft: '1px solid var(--border)',
+        display: 'flex', flexDirection: 'column',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>🛒 {t('cart')}</h3>
+          <button onClick={() => setCartOpen(false)} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 20, color: 'var(--text-muted)',
+          }}>✕</button>
         </div>
 
-        <div style={{ flex: 1, overflow: "auto", padding: "8px 20px" }}>
+        {/* Items */}
+        <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
           {cart.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "48px 0", color: v.tx3, fontSize: 13 }}>Cart is empty</div>
+            <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: 40 }}>
+              {t('empty_cart')}
+            </p>
           ) : (
-            cart.map((p) => {
-              const imgUrl = p.imageUrl || `https://graph.digiseller.ru/img.ashx?id_d=${p.id}&maxlength=120`;
-              return (
-                <div key={p.id} style={{ display: "flex", gap: 10, padding: "12px 0", borderBottom: `1px solid ${v.border}`, alignItems: "center" }}>
-                  <img src={imgUrl} alt="" style={{ width: 52, height: 30, borderRadius: 6, objectFit: "cover", background: v.surface2 }}
-                    onError={(e) => { e.target.src = `https://placehold.co/52x30/${dark ? "1a1e28" : "e8eaef"}/${dark ? "525c72" : "9ca3b3"}?text=...&font=raleway`; }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: v.tx }}>{p.name}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, marginTop: 2, color: v.tx }}>{CURRENCY}{Number(p.price).toFixed(2)}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {cart.map(item => {
+                const name = locale === 'ru' && item.name_ru ? item.name_ru : item.name;
+                return (
+                  <div key={item.id} style={{
+                    display: 'flex', gap: 12, alignItems: 'center',
+                    padding: 12, borderRadius: 10,
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border)',
+                  }}>
+                    <div style={{
+                      width: 50, height: 50, borderRadius: 8,
+                      background: 'var(--bg-hover)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      overflow: 'hidden', flexShrink: 0,
+                    }}>
+                      {item.image_url ? (
+                        <img src={item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span>🎮</span>
+                      )}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: 13, fontWeight: 600,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>{name}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--brand)', marginTop: 2 }}>
+                        ${Number(item.price).toFixed(2)}
+                      </div>
+                    </div>
+                    <button onClick={() => removeFromCart(item.id)} style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-muted)', fontSize: 16,
+                    }}>✕</button>
                   </div>
-                  <button onClick={() => removeFromCart(p.id)} style={{ border: "none", background: "none", color: v.tx3, cursor: "pointer", fontSize: 14, padding: 4 }}>✕</button>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
 
+        {/* Footer */}
         {cart.length > 0 && (
-          <div style={{ padding: "16px 20px", borderTop: `1px solid ${v.border}` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, marginBottom: 14, color: v.tx }}>
-              <span>Total</span><span>{CURRENCY}{cartTotal.toFixed(2)}</span>
+          <div style={{
+            padding: 20, borderTop: '1px solid var(--border)',
+            display: 'flex', flexDirection: 'column', gap: 10,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 700 }}>
+              <span>{t('total')}</span>
+              <span style={{ color: 'var(--brand)' }}>${cartTotal.toFixed(2)}</span>
             </div>
-            <button className="buy-btn" onClick={handleCheckout} style={{ width: "100%", height: 44, border: "none", borderRadius: 10, background: v.accent, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-              Checkout via Digiseller
+            <input
+              type="email"
+              placeholder={t('email_placeholder')}
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+            />
+            <button className="btn-primary" disabled={!email || checking} onClick={() => handleCheckout('stripe')}>
+              💳 {t('pay_with_card')}
             </button>
-            <p style={{ textAlign: "center", fontSize: 10, color: v.tx3, marginTop: 8 }}>Secure payment by Digiseller</p>
+            <button className="btn-secondary" disabled={!email || checking} onClick={() => handleCheckout('crypto')}>
+              ₿ {t('pay_with_crypto')}
+            </button>
           </div>
         )}
       </div>

@@ -2,16 +2,9 @@
 const nextConfig = {
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "graph.digiseller.ru",
-      },
-      {
-        protocol: "https",
-        hostname: "graph.digiseller.com",
-      },
-    ],
-  },
+      { protocol: 'https', hostname: '**' }
+    ]
+  }
 };
 
 module.exports = nextConfig;

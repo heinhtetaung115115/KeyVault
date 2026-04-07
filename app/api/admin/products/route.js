@@ -1,104 +1,76 @@
-/**
- * GET   /api/admin/products           — List all products with details
- * PATCH /api/admin/products           — Update product (toggle on/off, change price)
- */
-import { requireAuth } from "../../../lib/admin-auth";
-import { getSellerProducts, getToken, normalizeProduct } from "../../../lib/digiseller";
-
-const API_BASE = "https://api.digiseller.ru/api";
+import { NextResponse } from 'next/server';
+import { getSupabaseAdmin } from '../../../lib/supabase';
+import { verifyAdmin } from '../../../lib/admin-auth';
 
 export async function GET(request) {
-  const authError = requireAuth(request);
-  if (authError) return authError;
+  if (!verifyAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const supabase = getSupabaseAdmin();
 
-  try {
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const rows = parseInt(searchParams.get("rows") || "50", 10);
+  const { data, error } = await supabase
+    .from('products')
+    .select('*, categories(name, slug)')
+    .order('created_at', { ascending: false });
 
-    const data = await getSellerProducts(page, rows, "name");
+  // Get stock counts
+  const { data: stockData } = await supabase
+    .from('product_keys')
+    .select('product_id, is_sold');
 
-    const rawProducts = data.product || data.products || data.rows || [];
-    const products = (Array.isArray(rawProducts) ? rawProducts : []).map((p) => {
-      const normalized = normalizeProduct(p);
-      return {
-        ...normalized,
-        // Extra admin fields
-        contentCount: p.cnt_content || p.in_stock_count || 0,
-        isEnabled: p.enabled !== false && p.active !== false,
-        dateCreate: p.date_create || p.date_add || "",
-        dateUpdate: p.date_update || p.date_edit || "",
-        agentCommission: p.comission_partner || p.agent_commission || 0,
-      };
-    });
+  const stockMap = {};
+  const totalMap = {};
+  (stockData || []).forEach(k => {
+    totalMap[k.product_id] = (totalMap[k.product_id] || 0) + 1;
+    if (!k.is_sold) stockMap[k.product_id] = (stockMap[k.product_id] || 0) + 1;
+  });
 
-    return Response.json({
-      ok: true,
-      products,
-      page,
-      totalCount: data.totalCount || data.cnt || products.length,
-      totalPages: data.pages || Math.ceil((data.cnt || products.length) / rows),
-    });
-  } catch (error) {
-    console.error("Admin products error:", error);
-    return Response.json(
-      { ok: false, error: error.message, products: [] },
-      { status: 500 }
-    );
-  }
+  const enriched = (data || []).map(p => ({
+    ...p,
+    stock_count: stockMap[p.id] || 0,
+    total_keys: totalMap[p.id] || 0,
+  }));
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(enriched);
 }
 
-export async function PATCH(request) {
-  const authError = requireAuth(request);
-  if (authError) return authError;
+export async function POST(request) {
+  if (!verifyAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const supabase = getSupabaseAdmin();
+  const body = await request.json();
 
-  try {
-    const body = await request.json();
-    const { productId, action, value } = body;
-
-    if (!productId || !action) {
-      return Response.json(
-        { ok: false, error: "productId and action are required" },
-        { status: 400 }
-      );
-    }
-
-    const token = await getToken();
-
-    if (action === "toggle") {
-      // Enable or disable a product
-      const res = await fetch(`${API_BASE}/product/edit/base?token=${token}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id_goods: parseInt(productId, 10),
-          enabled: value === true || value === "true",
-        }),
-      });
-      const data = await res.json();
-      return Response.json({ ok: true, data });
-    }
-
-    if (action === "updatePrice") {
-      // Update product price
-      const res = await fetch(`${API_BASE}/product/edit/base?token=${token}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id_goods: parseInt(productId, 10),
-          price: parseFloat(value),
-        }),
-      });
-      const data = await res.json();
-      return Response.json({ ok: true, data });
-    }
-
-    return Response.json(
-      { ok: false, error: `Unknown action: ${action}` },
-      { status: 400 }
-    );
-  } catch (error) {
-    console.error("Admin product update error:", error);
-    return Response.json({ ok: false, error: error.message }, { status: 500 });
+  // Generate slug from name
+  if (!body.slug) {
+    body.slug = body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
+
+  const { data, error } = await supabase.from('products').insert(body).select().single();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
+}
+
+export async function PUT(request) {
+  if (!verifyAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const supabase = getSupabaseAdmin();
+  const body = await request.json();
+  const { id, ...updates } = body;
+
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+  updates.updated_at = new Date().toISOString();
+  const { data, error } = await supabase.from('products').update(updates).eq('id', id).select().single();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
+}
+
+export async function DELETE(request) {
+  if (!verifyAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const supabase = getSupabaseAdmin();
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+  const { error } = await supabase.from('products').delete().eq('id', id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
 }

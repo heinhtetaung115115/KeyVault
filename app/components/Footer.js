@@ -1,28 +1,33 @@
-const STORE_NAME = process.env.NEXT_PUBLIC_STORE_NAME || "KeyVault";
+'use client';
+import { useStore } from './StoreContext';
 
 export default function Footer() {
+  const { t } = useStore();
+
   return (
-    <footer className="border-t border-[var(--border)] py-10 px-6 text-center">
-      <div className="max-w-[1200px] mx-auto">
-        <div className="flex justify-center gap-6 mb-4 flex-wrap">
-          {["About", "FAQ", "Terms of Service", "Privacy Policy", "Contact"].map(
-            (link) => (
-              <a
-                key={link}
-                href="#"
-                className="text-[13px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-              >
-                {link}
-              </a>
-            )
-          )}
+    <footer style={{
+      borderTop: '1px solid var(--border)',
+      padding: '24px 20px',
+      marginTop: 60,
+    }}>
+      <div style={{
+        maxWidth: 1200, margin: '0 auto',
+        display: 'flex', flexWrap: 'wrap',
+        justifyContent: 'space-between', alignItems: 'center',
+        gap: 16,
+      }}>
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+          {['about', 'faq', 'terms', 'privacy', 'support'].map(k => (
+            <a key={k} href={`#${k}`} style={{
+              color: 'var(--text-muted)', textDecoration: 'none',
+              fontSize: 13, fontWeight: 500,
+              transition: 'color 0.2s',
+            }}>{t(k)}</a>
+          ))}
         </div>
-        <p className="text-xs text-[var(--text-tertiary)]">
-          &copy; {new Date().getFullYear()} {STORE_NAME}. All rights reserved.
-        </p>
-        <p className="text-[11px] text-[var(--text-tertiary)] mt-1.5">
-          Powered by Digiseller Affiliate Program &middot; Secure payments
-        </p>
+        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+          {t('footer_powered')}
+        </span>
       </div>
     </footer>
   );
