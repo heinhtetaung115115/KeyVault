@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '../../lib/supabase';
+import { getSupabaseAdmin } from '../../lib/supabase';
 import { NextResponse } from 'next/server';
 
 export async function GET(request) {
@@ -7,7 +7,7 @@ export async function GET(request) {
   const search = searchParams.get('search');
   const sort = searchParams.get('sort') || 'recommended';
 
-  const supabase = getSupabaseClient();
+  const supabase = getSupabaseAdmin();
 
   // Build query - join with categories for name and with product_keys for stock
   let query = supabase

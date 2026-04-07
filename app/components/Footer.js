@@ -4,6 +4,14 @@ import { useStore } from './StoreContext';
 export default function Footer() {
   const { t } = useStore();
 
+  const links = [
+    { key: 'about', href: '/about' },
+    { key: 'faq', href: '/faq' },
+    { key: 'terms', href: '/terms' },
+    { key: 'privacy', href: '/privacy' },
+    { key: 'support', href: '/support' },
+  ];
+
   return (
     <footer style={{
       borderTop: '1px solid var(--border)',
@@ -17,12 +25,12 @@ export default function Footer() {
         gap: 16,
       }}>
         <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-          {['about', 'faq', 'terms', 'privacy', 'support'].map(k => (
-            <a key={k} href={`#${k}`} style={{
+          {links.map(l => (
+            <a key={l.key} href={l.href} style={{
               color: 'var(--text-muted)', textDecoration: 'none',
               fontSize: 13, fontWeight: 500,
               transition: 'color 0.2s',
-            }}>{t(k)}</a>
+            }}>{t(l.key)}</a>
           ))}
         </div>
         <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>

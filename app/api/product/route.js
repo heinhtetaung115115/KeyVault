@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '../../lib/supabase';
+import { getSupabaseAdmin } from '../../lib/supabase';
 import { NextResponse } from 'next/server';
 
 export async function GET(request) {
@@ -10,7 +10,7 @@ export async function GET(request) {
     return NextResponse.json({ error: 'id or slug required' }, { status: 400 });
   }
 
-  const supabase = getSupabaseClient();
+  const supabase = getSupabaseAdmin();
 
   let query = supabase
     .from('products')
