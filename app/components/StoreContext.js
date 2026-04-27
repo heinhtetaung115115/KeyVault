@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { t } from '../lib/i18n';
 
 const StoreContext = createContext();
@@ -18,7 +18,7 @@ export function StoreProvider({ children }) {
     const savedLocale = localStorage.getItem('kv-locale');
     if (savedLocale) setLocale(savedLocale);
     const savedCart = localStorage.getItem('kv-cart');
-    if (savedCart) try { setCart(JSON.parse(savedCart)); } catch {}
+    if (savedCart) try { setCart(JSON.parse(savedCart)); } catch(_e) { /* ignore */ }
   }, []);
 
   useEffect(() => {
@@ -37,6 +37,11 @@ export function StoreProvider({ children }) {
   const toggleTheme = () => setTheme(p => p === 'dark' ? 'light' : 'dark');
   const toggleLocale = () => setLocale(p => p === 'en' ? 'ru' : 'en');
 
+  const showToast = useCallback((message, type = 'success') => {
+    setToast({ message, type, id: Date.now() });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
   const addToCart = useCallback((product) => {
     setCart(prev => {
       const exists = prev.find(i => i.id === product.id);
@@ -45,7 +50,7 @@ export function StoreProvider({ children }) {
     });
     showToast(locale === 'ru' ? 'Добавлено в корзину' : 'Added to cart');
     setCartOpen(true);
-  }, [locale]);
+  }, [locale, showToast]);
 
   const removeFromCart = useCallback((id) => {
     setCart(prev => prev.filter(i => i.id !== id));
@@ -54,11 +59,6 @@ export function StoreProvider({ children }) {
   const clearCart = useCallback(() => setCart([]), []);
 
   const cartTotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-
-  const showToast = useCallback((message, type = 'success') => {
-    setToast({ message, type, id: Date.now() });
-    setTimeout(() => setToast(null), 3000);
-  }, []);
 
   const i = useCallback((key) => t(key, locale), [locale]);
 
