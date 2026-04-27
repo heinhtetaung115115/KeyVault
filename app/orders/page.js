@@ -20,7 +20,7 @@ export default function OrdersPage() {
       const res = await fetch(`/api/orders?email=${encodeURIComponent(email)}`);
       const data = await res.json();
       setOrders(Array.isArray(data) ? data : []);
-    } catch(_e) {
+    } catch {
       setOrders([]);
     }
     setLoading(false);

@@ -24,7 +24,7 @@ export default function OrderPage() {
             setTimeout(() => setPollCount(c => c + 1), 5000);
           }
         }
-      } catch(_e) {}
+      } catch {}
       setLoading(false);
     };
     fetchOrder();

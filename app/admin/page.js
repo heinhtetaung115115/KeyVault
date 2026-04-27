@@ -47,7 +47,7 @@ export default function AdminDashboard() {
       } else {
         flash('Invalid password');
       }
-    } catch(_e) {
+    } catch {
       flash('Connection error');
     }
   };
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/products', { headers });
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : []);
-    } catch(_e) {}
+    } catch {}
   }, [password]);
 
   const fetchCategories = useCallback(async () => {
@@ -71,7 +71,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/categories');
       const data = await res.json();
       setCategories(Array.isArray(data) ? data : []);
-    } catch(_e) {}
+    } catch {}
   }, []);
 
   const fetchOrders = useCallback(async () => {
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
       const res = await fetch(`/api/admin/orders${params}`, { headers });
       const data = await res.json();
       setOrders(data.orders || []);
-    } catch(_e) {}
+    } catch {}
   }, [password, orderFilter]);
 
   useEffect(() => {
@@ -132,7 +132,7 @@ export default function AdminDashboard() {
       }
       resetForm();
       fetchProducts();
-    } catch(_e) { flash('Error saving'); }
+    } catch { flash('Error saving'); }
     setLoading(false);
   };
 
@@ -157,7 +157,7 @@ export default function AdminDashboard() {
       flash(`${data.inserted || 0} keys uploaded`);
       setKeyText('');
       fetchProducts();
-    } catch(_e) { flash('Upload error'); }
+    } catch { flash('Upload error'); }
     setLoading(false);
   };
 
@@ -167,7 +167,7 @@ export default function AdminDashboard() {
       const res = await fetch(`/api/admin/keys?product_id=${productId}`, { headers });
       const data = await res.json();
       setProductKeys(Array.isArray(data) ? data : []);
-    } catch(_e) { setProductKeys([]); }
+    } catch { setProductKeys([]); }
   };
 
   const deleteKey = async (id) => {
@@ -194,7 +194,7 @@ export default function AdminDashboard() {
       } else {
         flash(data.error || 'Delivery failed');
       }
-    } catch(_e) { flash('Error'); }
+    } catch { flash('Error'); }
     setLoading(false);
   };
 
