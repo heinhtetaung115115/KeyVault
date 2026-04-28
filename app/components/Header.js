@@ -42,11 +42,12 @@ export default function Header({ onSearch }) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
-          <a href="/orders" style={{
+          <a href="/account" style={{
             padding: '8px 12px', borderRadius: 8, fontSize: 14, fontWeight: 500,
             color: 'var(--text-secondary)', textDecoration: 'none',
             border: '1px solid var(--border)',
-          }}>{t('orders')}</a>
+            display: 'flex', alignItems: 'center', gap: 5,
+          }}>👤 {locale === 'ru' ? 'Аккаунт' : 'My Account'}</a>
 
           <button onClick={toggleLocale} style={{
             padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 500,

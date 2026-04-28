@@ -90,6 +90,10 @@ export async function GET(request) {
       .from('messages').select('*').eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
+    // Mark admin messages as read (customer is viewing)
+    await supabase.from('messages').update({ is_read: true })
+      .eq('conversation_id', conversationId).eq('sender', 'admin').eq('is_read', false);
+
     return NextResponse.json({ conversation: conv, messages: msgs || [] });
   }
 

@@ -357,7 +357,14 @@ export default function AdminDashboard() {
                           {msg.sender === 'admin' ? 'You (Admin)' : `${activeConv.email}`}
                         </div>
                         <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{msg.body}</div>
-                        <div style={{ fontSize: 9, opacity: 0.5, marginTop: 3, textAlign: 'right' }}>{new Date(msg.created_at).toLocaleString()}</div>
+                        <div style={{ fontSize: 9, opacity: 0.5, marginTop: 3, textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
+                          {new Date(msg.created_at).toLocaleString()}
+                          <span style={{ fontSize: 11, marginLeft: 4 }}>
+                            {msg.is_read
+                              ? <span style={{ color: msg.sender === 'admin' ? 'rgba(255,255,255,0.8)' : 'var(--brand)', fontWeight: 700 }}>✓✓</span>
+                              : <span style={{ opacity: 0.5 }}>✓</span>}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}

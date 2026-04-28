@@ -138,6 +138,7 @@ CREATE TABLE messages (
   conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE NOT NULL,
   sender TEXT NOT NULL CHECK (sender IN ('customer', 'admin')),
   body TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
