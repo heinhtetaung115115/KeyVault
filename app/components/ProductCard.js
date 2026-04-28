@@ -9,31 +9,19 @@ export default function ProductCard({ product }) {
 
   return (
     <a href={`/product/${product.id}`} className="product-card" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-      {/* Image */}
       <div style={{
-        width: '100%',
-        aspectRatio: '16/10',
-        background: 'var(--bg-secondary)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        position: 'relative',
+        width: '100%', aspectRatio: '16/10', background: 'var(--bg-secondary)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden', position: 'relative',
       }}>
         {product.image_url ? (
-          <img
-            src={product.image_url}
-            alt={name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            loading="lazy"
-          />
+          <img src={product.image_url} alt={name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
         ) : (
           <span style={{ fontSize: 40 }}>🎮</span>
         )}
-        {/* Delivery badge */}
         <span style={{
-          position: 'absolute', top: 8, right: 8,
-          padding: '3px 8px', borderRadius: 6,
+          position: 'absolute', top: 8, right: 8, padding: '3px 8px', borderRadius: 6,
           fontSize: 11, fontWeight: 600,
           background: isAuto ? '#dcfce7' : '#fef3c7',
           color: isAuto ? '#166534' : '#92400e',
@@ -41,32 +29,16 @@ export default function ProductCard({ product }) {
           {isAuto ? '⚡ Auto' : '🕐 Manual'}
         </span>
       </div>
-
-      {/* Info */}
       <div style={{ padding: '12px 14px' }}>
         <h3 style={{
-          fontSize: 14, fontWeight: 600,
-          color: 'var(--text-primary)',
-          margin: 0, marginBottom: 6,
-          lineHeight: 1.3,
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
+          fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: 0, marginBottom: 6,
+          lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical', overflow: 'hidden',
         }}>{name}</h3>
-
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between',
-          marginTop: 8,
-        }}>
-          <span style={{
-            fontSize: 18, fontWeight: 700,
-            color: 'var(--brand)',
-          }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--brand)' }}>
             ${Number(product.price).toFixed(2)}
           </span>
-
           {isAuto && (
             <span className={`stock-badge ${stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
               {stock > 0 ? t('in_stock') : t('out_of_stock')}

@@ -2,12 +2,7 @@
 
 export function ProductCardSkeleton() {
   return (
-    <div style={{
-      background: 'var(--bg-card)',
-      border: '1px solid var(--border)',
-      borderRadius: 'var(--radius)',
-      overflow: 'hidden',
-    }}>
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
       <div className="skeleton" style={{ width: '100%', aspectRatio: '16/10' }} />
       <div style={{ padding: '12px 14px' }}>
         <div className="skeleton" style={{ height: 14, width: '80%', marginBottom: 8 }} />
@@ -23,14 +18,8 @@ export function ProductCardSkeleton() {
 
 export function ProductGridSkeleton({ count = 8 }) {
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-      gap: 16,
-    }}>
-      {Array.from({ length: count }).map((_, i) => (
-        <ProductCardSkeleton key={i} />
-      ))}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
+      {Array.from({ length: count }).map((_, i) => <ProductCardSkeleton key={i} />)}
     </div>
   );
 }

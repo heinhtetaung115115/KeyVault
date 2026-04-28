@@ -11,59 +11,33 @@ export async function POST(request) {
   let event;
   try {
     event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    console.error('Stripe webhook signature failed:', err.message);
+  } catch(_e) {
+    console.error('Stripe webhook signature failed:', _e.message);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const orderId = session.metadata?.order_id;
-
-    if (!orderId) {
-      console.error('No order_id in Stripe metadata');
-      return NextResponse.json({ received: true });
-    }
+    if (!orderId) return NextResponse.json({ received: true });
 
     const supabase = getSupabaseAdmin();
+    const { data: order } = await supabase.from('orders').select('*').eq('id', orderId).single();
+    if (!order || order.status !== 'pending') return NextResponse.json({ received: true });
 
-    // Get the order
-    const { data: order } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('id', orderId)
-      .single();
-
-    if (!order || order.status !== 'pending') {
-      return NextResponse.json({ received: true });
-    }
-
-    // Auto-delivery: claim a key
     if (order.delivery_type === 'auto') {
       const { data: keyContent } = await supabase.rpc('claim_key', {
-        p_product_id: order.product_id,
-        p_order_id: orderId,
+        p_product_id: order.product_id, p_order_id: orderId,
       });
-
-      await supabase
-        .from('orders')
-        .update({
-          status: keyContent ? 'delivered' : 'paid',
-          delivered_content: keyContent || null,
-          payment_id: session.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', orderId);
+      await supabase.from('orders').update({
+        status: keyContent ? 'delivered' : 'paid',
+        delivered_content: keyContent || null,
+        payment_id: session.id, updated_at: new Date().toISOString(),
+      }).eq('id', orderId);
     } else {
-      // Manual delivery: mark as paid, admin delivers later
-      await supabase
-        .from('orders')
-        .update({
-          status: 'paid',
-          payment_id: session.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', orderId);
+      await supabase.from('orders').update({
+        status: 'paid', payment_id: session.id, updated_at: new Date().toISOString(),
+      }).eq('id', orderId);
     }
   }
 

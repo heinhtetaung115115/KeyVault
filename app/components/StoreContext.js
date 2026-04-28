@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { t } from '../lib/i18n';
 
 const StoreContext = createContext();
@@ -26,13 +26,8 @@ export function StoreProvider({ children }) {
     localStorage.setItem('kv-theme', theme);
   }, [theme]);
 
-  useEffect(() => {
-    localStorage.setItem('kv-locale', locale);
-  }, [locale]);
-
-  useEffect(() => {
-    localStorage.setItem('kv-cart', JSON.stringify(cart));
-  }, [cart]);
+  useEffect(() => { localStorage.setItem('kv-locale', locale); }, [locale]);
+  useEffect(() => { localStorage.setItem('kv-cart', JSON.stringify(cart)); }, [cart]);
 
   const toggleTheme = () => setTheme(p => p === 'dark' ? 'light' : 'dark');
   const toggleLocale = () => setLocale(p => p === 'en' ? 'ru' : 'en');
@@ -52,30 +47,20 @@ export function StoreProvider({ children }) {
     setCartOpen(true);
   }, [locale, showToast]);
 
-  const removeFromCart = useCallback((id) => {
-    setCart(prev => prev.filter(i => i.id !== id));
-  }, []);
-
+  const removeFromCart = useCallback((id) => { setCart(prev => prev.filter(i => i.id !== id)); }, []);
   const clearCart = useCallback(() => setCart([]), []);
-
   const cartTotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-
   const i = useCallback((key) => t(key, locale), [locale]);
 
   return (
     <StoreContext.Provider value={{
-      theme, toggleTheme,
-      locale, toggleLocale,
-      currency, setCurrency,
+      theme, toggleTheme, locale, toggleLocale, currency, setCurrency,
       cart, addToCart, removeFromCart, clearCart, cartTotal, cartOpen, setCartOpen,
-      toast, showToast,
-      t: i,
+      toast, showToast, t: i,
     }}>
       {children}
     </StoreContext.Provider>
   );
 }
 
-export function useStore() {
-  return useContext(StoreContext);
-}
+export function useStore() { return useContext(StoreContext); }

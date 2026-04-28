@@ -1,6 +1,6 @@
 -- ============================================================
 -- KeyVault v2 — Supabase Database Schema
--- Run this in Supabase SQL Editor (Dashboard → SQL Editor → New Query)
+-- Run this in Supabase SQL Editor
 -- ============================================================
 
 -- 1. Categories
@@ -32,7 +32,7 @@ CREATE TABLE products (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 3. Product keys / codes (the secret content delivered to buyers)
+-- 3. Product keys / codes
 CREATE TABLE product_keys (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   product_id UUID REFERENCES products(id) ON DELETE CASCADE NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE orders (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 5. Indexes for performance
+-- 5. Indexes
 CREATE INDEX idx_products_category ON products(category_id);
 CREATE INDEX idx_products_active ON products(is_active);
 CREATE INDEX idx_products_slug ON products(slug);
@@ -69,26 +69,13 @@ CREATE INDEX idx_orders_email ON orders(buyer_email);
 CREATE INDEX idx_orders_payment ON orders(payment_id);
 CREATE INDEX idx_orders_status ON orders(status);
 
--- 6. Stock count view (convenience)
-CREATE OR REPLACE VIEW product_stock AS
-SELECT
-  p.id AS product_id,
-  p.name,
-  p.delivery_type,
-  COUNT(pk.id) FILTER (WHERE pk.is_sold = false) AS stock_count,
-  COUNT(pk.id) AS total_keys
-FROM products p
-LEFT JOIN product_keys pk ON pk.product_id = p.id
-GROUP BY p.id, p.name, p.delivery_type;
-
--- 7. Function: claim a key for an order (atomic, race-safe)
+-- 6. Atomic key claiming function (race-safe)
 CREATE OR REPLACE FUNCTION claim_key(p_product_id UUID, p_order_id UUID)
 RETURNS TEXT AS $$
 DECLARE
   v_key_content TEXT;
   v_key_id UUID;
 BEGIN
-  -- Lock and grab the first unsold key
   SELECT id, key_content INTO v_key_id, v_key_content
   FROM product_keys
   WHERE product_id = p_product_id AND is_sold = false
@@ -100,7 +87,6 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  -- Mark as sold
   UPDATE product_keys
   SET is_sold = true, sold_at = now(), order_id = p_order_id
   WHERE id = v_key_id;
@@ -109,24 +95,34 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 8. RLS Policies
+-- 7. RLS Policies
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE product_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 
--- Public read access for categories and active products
 CREATE POLICY "Public read categories" ON categories FOR SELECT USING (true);
 CREATE POLICY "Public read active products" ON products FOR SELECT USING (is_active = true);
-
--- Orders: buyers can only read their own orders by email (enforced via API, not RLS for anon)
--- Keys: never publicly readable
 CREATE POLICY "No public key access" ON product_keys FOR SELECT USING (false);
 CREATE POLICY "No public order access" ON orders FOR SELECT USING (false);
 
--- Service role bypasses RLS, so admin API routes work fine
+-- 8. OTP codes for order lookup verification
+CREATE TABLE otp_codes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email TEXT NOT NULL,
+  code TEXT NOT NULL,
+  used BOOLEAN DEFAULT false,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
--- 9. Seed some example categories
+CREATE INDEX idx_otp_email ON otp_codes(email);
+CREATE INDEX idx_otp_lookup ON otp_codes(email, code, used);
+
+ALTER TABLE otp_codes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "No public otp access" ON otp_codes FOR SELECT USING (false);
+
+-- 9. Seed categories
 INSERT INTO categories (name, name_ru, slug, sort_order) VALUES
   ('Steam Games', 'Игры Steam', 'steam-games', 1),
   ('Xbox Games', 'Игры Xbox', 'xbox-games', 2),

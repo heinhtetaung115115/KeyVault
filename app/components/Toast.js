@@ -16,10 +16,8 @@ export default function Toast() {
     <div className="toast-enter" style={{
       position: 'fixed', bottom: 24, right: 24, zIndex: 200,
       padding: '12px 20px', borderRadius: 10,
-      background: c.bg, color: c.color,
-      border: `1px solid ${c.border}`,
-      fontSize: 14, fontWeight: 500,
-      boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+      background: c.bg, color: c.color, border: `1px solid ${c.border}`,
+      fontSize: 14, fontWeight: 500, boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
     }}>
       {toast.type === 'success' && '✓ '}
       {toast.type === 'error' && '✕ '}
