@@ -19,6 +19,11 @@ export default function AdminDashboard() {
   const [viewingKeysFor, setViewingKeysFor] = useState(null);
   const [deliverOrderId, setDeliverOrderId] = useState('');
   const [deliverContent, setDeliverContent] = useState('');
+  const [conversations, setConversations] = useState([]);
+  const [convFilter, setConvFilter] = useState('');
+  const [activeConv, setActiveConv] = useState(null);
+  const [convMessages, setConvMessages] = useState([]);
+  const [adminReply, setAdminReply] = useState('');
 
   const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${password}` };
   const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 3000); };
@@ -45,7 +50,43 @@ export default function AdminDashboard() {
     try { const params = orderFilter ? `?status=${orderFilter}` : ''; const res = await fetch(`/api/admin/orders${params}`, { headers }); const data = await res.json(); setOrders(data.orders || []); } catch(_e) { /* ignore */ }
   }, [password, orderFilter]);
 
-  useEffect(() => { if (authed) { fetchProducts(); fetchCategories(); fetchOrders(); } }, [authed, fetchProducts, fetchCategories, fetchOrders]);
+  useEffect(() => { if (authed) { fetchProducts(); fetchCategories(); fetchOrders(); fetchConversations(); } }, [authed, fetchProducts, fetchCategories, fetchOrders]);
+
+  const fetchConversations = useCallback(async () => {
+    try {
+      const params = convFilter ? `?status=${convFilter}` : '';
+      const res = await fetch(`/api/admin/messages${params}`, { headers });
+      const data = await res.json();
+      setConversations(Array.isArray(data) ? data : []);
+    } catch(_e) { /* ignore */ }
+  }, [password, convFilter]);
+
+  const openConversation = async (convId) => {
+    try {
+      const res = await fetch(`/api/admin/messages?conversation_id=${convId}`, { headers });
+      const data = await res.json();
+      if (data.conversation) { setActiveConv(data.conversation); setConvMessages(data.messages || []); }
+    } catch(_e) { /* ignore */ }
+  };
+
+  const sendAdminReply = async () => {
+    if (!adminReply.trim() || !activeConv) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/messages', { method: 'POST', headers, body: JSON.stringify({ conversation_id: activeConv.id, body: adminReply }) });
+      const data = await res.json();
+      if (data.success) { flash('Reply sent + email notified!'); setAdminReply(''); await openConversation(activeConv.id); fetchConversations(); }
+      else flash(data.error || 'Failed');
+    } catch(_e) { flash('Error'); }
+    setLoading(false);
+  };
+
+  const updateConvStatus = async (convId, status) => {
+    await fetch('/api/admin/messages', { method: 'PUT', headers, body: JSON.stringify({ conversation_id: convId, status }) });
+    flash(`Conversation ${status}`);
+    fetchConversations();
+    if (activeConv?.id === convId) setActiveConv(prev => ({ ...prev, status }));
+  };
 
   const resetForm = () => { setForm({ name: '', name_ru: '', slug: '', description: '', description_ru: '', price: '', image_url: '', category_id: '', delivery_type: 'auto', is_featured: false, is_active: true }); setEditProduct(null); };
 
@@ -128,9 +169,9 @@ export default function AdminDashboard() {
       {msg && <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 200, padding: '10px 18px', borderRadius: 8, background: '#dcfce7', color: '#166534', fontSize: 14, fontWeight: 500, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>{msg}</div>}
 
       <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border)', padding: '0 24px', background: 'var(--bg-card)' }}>
-        {['products', 'keys', 'orders'].map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{ padding: '12px 20px', fontSize: 14, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', color: tab === t ? 'var(--brand)' : 'var(--text-muted)', borderBottom: tab === t ? '2px solid var(--brand)' : '2px solid transparent', textTransform: 'capitalize' }}>
-            {t === 'products' ? '📦 Products' : t === 'keys' ? '🔑 Keys' : '📋 Orders'}
+        {['products', 'keys', 'orders', 'messages'].map(t => (
+          <button key={t} onClick={() => { setTab(t); if (t === 'messages') fetchConversations(); }} style={{ padding: '12px 20px', fontSize: 14, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', color: tab === t ? 'var(--brand)' : 'var(--text-muted)', borderBottom: tab === t ? '2px solid var(--brand)' : '2px solid transparent', textTransform: 'capitalize' }}>
+            {t === 'products' ? '📦 Products' : t === 'keys' ? '🔑 Keys' : t === 'orders' ? '📋 Orders' : `💬 Messages${conversations.filter(c => c.status === 'open').length > 0 ? ` (${conversations.filter(c => c.status === 'open').length})` : ''}`}
           </button>
         ))}
       </div>
@@ -233,6 +274,109 @@ export default function AdminDashboard() {
                 <td style={s.td}>{o.status === 'paid' && o.delivery_type === 'manual' && <button onClick={() => { setDeliverOrderId(o.id); window.scrollTo(0, 0); }} style={s.smallBtn}>📬</button>}</td>
               </tr>
             ))}</tbody></table></div>
+          </div>
+        </>)}
+
+        {/* ===================== MESSAGES TAB ===================== */}
+        {tab === 'messages' && (<>
+          {/* Filters */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            {['', 'open', 'replied', 'closed'].map(st => (
+              <button key={st} onClick={() => setConvFilter(st)} className={`chip ${convFilter === st ? 'active' : ''}`}>
+                {st === '' ? 'All' : st === 'open' ? '🔴 Open' : st === 'replied' ? '✅ Replied' : '✓ Closed'}
+              </button>
+            ))}
+            <button onClick={fetchConversations} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13 }}>🔄 Refresh</button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: activeConv ? '300px 1fr' : '1fr', gap: 16 }}>
+            {/* Conversation list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 600, overflowY: 'auto' }}>
+              {conversations.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+                  <span style={{ fontSize: 32 }}>💬</span><p style={{ marginTop: 8, fontSize: 13 }}>No conversations</p>
+                </div>
+              ) : conversations.map(conv => {
+                const isActive = activeConv?.id === conv.id;
+                const stColor = conv.status === 'open' ? '#f59e0b' : conv.status === 'replied' ? '#22c55e' : '#94a3b8';
+                return (
+                  <button key={conv.id} onClick={() => openConversation(conv.id)} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 10, padding: 12, borderRadius: 10, width: '100%',
+                    background: isActive ? 'var(--brand-light)' : 'var(--bg-card)',
+                    border: `1px solid ${isActive ? 'var(--brand)' : 'var(--border)'}`,
+                    cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
+                  }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: stColor, flexShrink: 0, marginTop: 6 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conv.subject}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{conv.email}</div>
+                      {conv.last_message && (
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {conv.last_message.sender === 'admin' ? '↩ ' : ''}{conv.last_message.body.slice(0, 60)}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>{new Date(conv.updated_at).toLocaleString()}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Chat panel */}
+            {activeConv && (
+              <div style={s.card}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <div>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{activeConv.subject}</h3>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                      {activeConv.email} · {activeConv.status}
+                      {activeConv.order_id && <span> · Order: {activeConv.order_id.slice(0, 8)}</span>}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {activeConv.status !== 'closed' && (
+                      <button onClick={() => updateConvStatus(activeConv.id, 'closed')} style={s.smallBtn}>✓ Close</button>
+                    )}
+                    {activeConv.status === 'closed' && (
+                      <button onClick={() => updateConvStatus(activeConv.id, 'open')} style={s.smallBtn}>↻ Reopen</button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Messages */}
+                <div style={{ background: 'var(--bg-secondary)', borderRadius: 10, padding: 14, maxHeight: 400, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {convMessages.map(msg => (
+                    <div key={msg.id} style={{ display: 'flex', justifyContent: msg.sender === 'admin' ? 'flex-end' : 'flex-start' }}>
+                      <div style={{
+                        maxWidth: '85%', padding: '8px 12px', borderRadius: 10,
+                        background: msg.sender === 'admin' ? 'var(--brand)' : 'var(--bg-card)',
+                        color: msg.sender === 'admin' ? 'white' : 'var(--text-primary)',
+                        border: msg.sender === 'customer' ? '1px solid var(--border)' : 'none',
+                      }}>
+                        <div style={{ fontSize: 10, fontWeight: 600, marginBottom: 3, opacity: 0.7 }}>
+                          {msg.sender === 'admin' ? 'You (Admin)' : `${activeConv.email}`}
+                        </div>
+                        <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{msg.body}</div>
+                        <div style={{ fontSize: 9, opacity: 0.5, marginTop: 3, textAlign: 'right' }}>{new Date(msg.created_at).toLocaleString()}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Reply box */}
+                {activeConv.status !== 'closed' && (
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                    <textarea rows={2} value={adminReply} onChange={e => setAdminReply(e.target.value)}
+                      placeholder="Type your reply... (customer gets email notification)"
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAdminReply(); } }}
+                      style={{ flex: 1 }} />
+                    <button className="btn-primary" onClick={sendAdminReply} disabled={loading || !adminReply.trim()} style={{ alignSelf: 'flex-end', padding: '10px 16px' }}>
+                      Reply
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </>)}
       </div>

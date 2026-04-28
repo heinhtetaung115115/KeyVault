@@ -122,7 +122,35 @@ CREATE INDEX idx_otp_lookup ON otp_codes(email, code, used);
 ALTER TABLE otp_codes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "No public otp access" ON otp_codes FOR SELECT USING (false);
 
--- 9. Seed categories
+-- 9. Support messages / conversations
+CREATE TABLE conversations (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+  status TEXT DEFAULT 'open' CHECK (status IN ('open', 'replied', 'closed')),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE NOT NULL,
+  sender TEXT NOT NULL CHECK (sender IN ('customer', 'admin')),
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_conversations_email ON conversations(email);
+CREATE INDEX idx_conversations_status ON conversations(status);
+CREATE INDEX idx_messages_conversation ON messages(conversation_id);
+
+ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "No public conversation access" ON conversations FOR SELECT USING (false);
+CREATE POLICY "No public message access" ON messages FOR SELECT USING (false);
+
+-- 10. Seed categories
 INSERT INTO categories (name, name_ru, slug, sort_order) VALUES
   ('Steam Games', 'Игры Steam', 'steam-games', 1),
   ('Xbox Games', 'Игры Xbox', 'xbox-games', 2),
