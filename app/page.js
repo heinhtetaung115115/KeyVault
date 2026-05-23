@@ -68,35 +68,37 @@ export default function Home() {
       <Toast />
 
       <main style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-        {/* Compact Hero with gradient animation */}
-        <section style={{
+        {/* Hero with animated background */}
+        <section className="hero-banner" style={{
           position: 'relative', overflow: 'hidden',
           borderRadius: 16, margin: '16px 0 20px',
           padding: '28px 28px',
-          background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6366f1 100%)',
-          backgroundSize: '200% 200%',
-          animation: 'gradientShift 6s ease infinite',
         }}>
-          {/* Floating orbs */}
-          <div style={{
-            position: 'absolute', top: -30, right: -30,
-            width: 120, height: 120, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.08)',
-            animation: 'float 4s ease-in-out infinite',
-          }} />
-          <div style={{
-            position: 'absolute', bottom: -20, left: '30%',
-            width: 80, height: 80, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.06)',
-            animation: 'float 5s ease-in-out infinite reverse',
-          }} />
+          {/* Animated mesh gradient background */}
+          <div className="hero-bg" />
 
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          {/* Animated grid lines */}
+          <div className="hero-grid" />
+
+          {/* Floating particles */}
+          <div className="hero-particle p1" />
+          <div className="hero-particle p2" />
+          <div className="hero-particle p3" />
+          <div className="hero-particle p4" />
+          <div className="hero-particle p5" />
+          <div className="hero-particle p6" />
+
+          {/* Aurora wave */}
+          <div className="hero-aurora" />
+          <div className="hero-aurora a2" />
+
+          {/* Content */}
+          <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div style={{ flex: 1, minWidth: 260 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'white', lineHeight: 1.3 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'white', lineHeight: 1.3, textShadow: '0 2px 20px rgba(0,0,0,0.3)' }}>
                 {t('hero_title')}
               </h1>
-              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, margin: '6px 0 0', lineHeight: 1.5, maxWidth: 400 }}>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, margin: '6px 0 0', lineHeight: 1.5, maxWidth: 400 }}>
                 {t('hero_subtitle')}
               </p>
             </div>
@@ -110,8 +112,9 @@ export default function Home() {
                 <span key={i} style={{
                   display: 'inline-flex', alignItems: 'center', gap: 4,
                   padding: '4px 10px', borderRadius: 8,
-                  background: 'rgba(255,255,255,0.15)',
-                  backdropFilter: 'blur(8px)',
+                  background: 'rgba(255,255,255,0.12)',
+                  backdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(255,255,255,0.15)',
                   color: 'white', fontSize: 11, fontWeight: 600,
                   whiteSpace: 'nowrap',
                 }}>
@@ -123,14 +126,79 @@ export default function Home() {
         </section>
 
         <style>{`
-          @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+          .hero-banner {
+            background: #0f0a2e;
           }
-          @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
+
+          .hero-bg {
+            position: absolute; inset: 0;
+            background:
+              radial-gradient(ellipse 80% 60% at 10% 40%, rgba(99, 102, 241, 0.5) 0%, transparent 60%),
+              radial-gradient(ellipse 60% 80% at 80% 20%, rgba(168, 85, 247, 0.4) 0%, transparent 55%),
+              radial-gradient(ellipse 70% 50% at 50% 80%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+              radial-gradient(ellipse 40% 40% at 90% 70%, rgba(236, 72, 153, 0.25) 0%, transparent 50%);
+            animation: meshMove 8s ease-in-out infinite alternate;
+          }
+
+          @keyframes meshMove {
+            0% { transform: scale(1) translate(0, 0); }
+            33% { transform: scale(1.05) translate(-2%, 1%); }
+            66% { transform: scale(1.02) translate(1%, -1%); }
+            100% { transform: scale(1) translate(-1%, 2%); }
+          }
+
+          .hero-grid {
+            position: absolute; inset: 0;
+            background-image:
+              linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: gridScroll 20s linear infinite;
+          }
+
+          @keyframes gridScroll {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(40px, 40px); }
+          }
+
+          .hero-particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+          }
+          .p1 { width: 4px; height: 4px; background: rgba(167,139,250,0.7); top: 20%; left: 15%; animation: drift 7s ease-in-out infinite; }
+          .p2 { width: 3px; height: 3px; background: rgba(129,140,248,0.6); top: 60%; left: 75%; animation: drift 9s ease-in-out infinite reverse; }
+          .p3 { width: 5px; height: 5px; background: rgba(236,72,153,0.5); top: 30%; left: 85%; animation: drift 6s ease-in-out infinite; }
+          .p4 { width: 3px; height: 3px; background: rgba(59,130,246,0.6); top: 70%; left: 25%; animation: drift 8s ease-in-out infinite reverse; }
+          .p5 { width: 6px; height: 6px; background: rgba(167,139,250,0.4); top: 45%; left: 55%; animation: drift 10s ease-in-out infinite; }
+          .p6 { width: 4px; height: 4px; background: rgba(99,102,241,0.5); top: 15%; left: 45%; animation: drift 7.5s ease-in-out infinite reverse; }
+
+          @keyframes drift {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+            25% { transform: translate(15px, -20px) scale(1.3); opacity: 1; }
+            50% { transform: translate(-10px, -35px) scale(0.8); opacity: 0.4; }
+            75% { transform: translate(20px, -15px) scale(1.2); opacity: 0.9; }
+          }
+
+          .hero-aurora {
+            position: absolute;
+            bottom: -30%; left: -10%;
+            width: 120%; height: 60%;
+            background: linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.15) 20%, rgba(168,85,247,0.12) 40%, rgba(236,72,153,0.1) 60%, rgba(59,130,246,0.12) 80%, transparent 100%);
+            filter: blur(30px);
+            animation: aurora 6s ease-in-out infinite alternate;
+            pointer-events: none;
+          }
+          .hero-aurora.a2 {
+            top: -40%; bottom: auto; left: 0;
+            animation: aurora 8s ease-in-out infinite alternate-reverse;
+            opacity: 0.6;
+          }
+
+          @keyframes aurora {
+            0% { transform: translateX(-5%) scaleY(1); opacity: 0.5; }
+            50% { transform: translateX(3%) scaleY(1.2); opacity: 0.8; }
+            100% { transform: translateX(-3%) scaleY(0.9); opacity: 0.6; }
           }
         `}</style>
 
