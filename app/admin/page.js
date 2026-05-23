@@ -512,34 +512,71 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Plans management panel */}
+            {/* Plans management modal */}
             {managingPlansFor && (
-              <div style={styles.card}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={styles.cardTitle}>💰 Price Plans: {products.find(p => p.id === managingPlansFor)?.name}</h3>
-                  <button onClick={() => setManagingPlansFor(null)} style={styles.smallBtn}>✕ Close</button>
-                </div>
-                {/* Existing plans */}
-                {plans.length > 0 && (
-                  <div style={{ marginBottom: 16 }}>
-                    {plans.map(plan => (
-                      <div key={plan.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', marginBottom: 6, background: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                        <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{plan.name}</span>
-                        {plan.name_ru && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>({plan.name_ru})</span>}
-                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--brand)' }}>${Number(plan.price).toFixed(2)}</span>
-                        <button onClick={() => deletePlan(plan.id)} style={{ ...styles.smallBtn, color: '#ef4444' }}>🗑</button>
-                      </div>
-                    ))}
+              <>
+                <div onClick={() => setManagingPlansFor(null)} style={{
+                  position: 'fixed', inset: 0, zIndex: 100,
+                  background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+                }} />
+                <div style={{
+                  position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                  zIndex: 101, width: '90%', maxWidth: 520, maxHeight: '80vh', overflowY: 'auto',
+                  background: 'var(--bg-card)', border: '1px solid var(--border)',
+                  borderRadius: 16, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                    <div>
+                      <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>💰 Price Plans</h3>
+                      <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>{products.find(p => p.id === managingPlansFor)?.name}</p>
+                    </div>
+                    <button onClick={() => setManagingPlansFor(null)} style={{
+                      width: 32, height: 32, borderRadius: '50%', border: 'none',
+                      background: 'var(--bg-secondary)', cursor: 'pointer',
+                      fontSize: 16, color: 'var(--text-muted)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>✕</button>
                   </div>
-                )}
-                {/* Add new plan */}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <input type="text" placeholder="Plan name (e.g. 1 Month)" value={planForm.name} onChange={e => setPlanForm(p => ({ ...p, name: e.target.value }))} style={{ flex: 1, minWidth: 140 }} />
-                  <input type="text" placeholder="Name (RU)" value={planForm.name_ru} onChange={e => setPlanForm(p => ({ ...p, name_ru: e.target.value }))} style={{ flex: 1, minWidth: 120 }} />
-                  <input type="number" step="0.01" placeholder="Price" value={planForm.price} onChange={e => setPlanForm(p => ({ ...p, price: e.target.value }))} style={{ width: 100 }} />
-                  <button onClick={addPlan} disabled={!planForm.name || !planForm.price} className="btn-primary" style={{ padding: '8px 16px', fontSize: 13 }}>+ Add Plan</button>
+
+                  {/* Existing plans */}
+                  {plans.length > 0 ? (
+                    <div style={{ marginBottom: 20 }}>
+                      {plans.map(plan => (
+                        <div key={plan.id} style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '10px 14px', marginBottom: 8,
+                          background: 'var(--bg-secondary)', borderRadius: 10,
+                          border: '1px solid var(--border)',
+                        }}>
+                          <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{plan.name}</span>
+                          {plan.name_ru && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>({plan.name_ru})</span>}
+                          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--brand)' }}>${Number(plan.price).toFixed(2)}</span>
+                          <button onClick={() => deletePlan(plan.id)} style={{ ...styles.smallBtn, color: '#ef4444' }}>🗑</button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>
+                      No plans yet. Add your first plan below.
+                    </div>
+                  )}
+
+                  {/* Add new plan form */}
+                  <div style={{ padding: 16, background: 'var(--bg-secondary)', borderRadius: 12, border: '1px solid var(--border)' }}>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 10 }}>Add New Plan</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input type="text" placeholder="Plan name (e.g. 1 Month)" value={planForm.name} onChange={e => setPlanForm(p => ({ ...p, name: e.target.value }))} style={{ flex: 1 }} />
+                        <input type="text" placeholder="Name (RU)" value={planForm.name_ru} onChange={e => setPlanForm(p => ({ ...p, name_ru: e.target.value }))} style={{ flex: 1 }} />
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input type="number" step="0.01" placeholder="Price (USD)" value={planForm.price} onChange={e => setPlanForm(p => ({ ...p, price: e.target.value }))} style={{ flex: 1 }} />
+                        <button onClick={addPlan} disabled={!planForm.name || !planForm.price} className="btn-primary" style={{ padding: '10px 20px', fontSize: 13, flexShrink: 0 }}>+ Add Plan</button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </>
         )}
