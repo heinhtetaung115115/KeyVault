@@ -1,10 +1,18 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from './StoreContext';
 
 export default function Header({ onSearch }) {
   const { theme, toggleTheme, locale, toggleLocale, cart, setCartOpen, t } = useStore();
   const [search, setSearch] = useState('');
+  const [scrolled, setScrolled] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleSearch = (e) => {
     const val = e.target.value;
@@ -15,116 +23,118 @@ export default function Header({ onSearch }) {
   return (
     <header style={{
       position: 'sticky', top: 0, zIndex: 50,
-      background: 'var(--bg-primary)',
-      borderBottom: '1px solid var(--border)',
-      backdropFilter: 'blur(12px)',
+      background: scrolled ? 'var(--bg-primary)' : 'transparent',
+      borderBottom: scrolled ? '1px solid var(--border)' : '1px solid transparent',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      transition: 'all 0.3s ease',
     }}>
       <div style={{
         maxWidth: 1200, margin: '0 auto',
-        padding: '12px 20px',
-        display: 'flex', alignItems: 'center', gap: 16,
-        flexWrap: 'wrap',
+        padding: scrolled ? '8px 20px' : '10px 20px',
+        display: 'flex', alignItems: 'center', gap: 12,
+        transition: 'padding 0.3s ease',
       }}>
         {/* Logo */}
         <a href="/" style={{
           display: 'flex', alignItems: 'center', gap: 8,
           textDecoration: 'none', color: 'var(--text-primary)',
-          fontWeight: 700, fontSize: 20,
-          flexShrink: 0,
+          fontWeight: 700, fontSize: scrolled ? 17 : 18,
+          flexShrink: 0, transition: 'font-size 0.3s ease',
         }}>
           <span style={{
-            background: 'var(--brand)', color: 'white',
-            width: 32, height: 32, borderRadius: 8,
+            background: 'linear-gradient(135deg, var(--brand), var(--brand-hover))',
+            color: 'white',
+            width: scrolled ? 28 : 30, height: scrolled ? 28 : 30,
+            borderRadius: 8,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, fontWeight: 700,
+            fontSize: 14, fontWeight: 700,
+            transition: 'all 0.3s ease',
           }}>K</span>
           KeyVault
         </a>
 
-        {/* Search */}
-        <div style={{ flex: 1, minWidth: 200, maxWidth: 400 }}>
+        {/* Search - expandable */}
+        <div style={{
+          flex: 1, maxWidth: searchFocused ? 500 : 360,
+          transition: 'max-width 0.3s ease',
+          position: 'relative',
+        }}>
+          <span style={{
+            position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+            fontSize: 14, color: 'var(--text-muted)', pointerEvents: 'none',
+          }}>🔍</span>
           <input
             type="search"
             placeholder={t('search_placeholder')}
             value={search}
             onChange={handleSearch}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
             style={{
               width: '100%',
               background: 'var(--bg-secondary)',
-              border: '1px solid var(--border)',
-              borderRadius: 8,
-              padding: '8px 14px',
-              fontSize: 14,
+              border: `1px solid ${searchFocused ? 'var(--brand)' : 'var(--border)'}`,
+              borderRadius: 20,
+              padding: '7px 14px 7px 34px',
+              fontSize: 13,
               color: 'var(--text-primary)',
               outline: 'none',
+              transition: 'all 0.2s ease',
             }}
           />
         </div>
 
-        {/* Right controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
-          {/* Orders link */}
-          <a href="/orders" style={{
-            padding: '8px 12px', borderRadius: 8,
-            fontSize: 14, fontWeight: 500,
-            color: 'var(--text-secondary)',
-            textDecoration: 'none',
-            border: '1px solid var(--border)',
-            transition: 'all 0.2s',
-          }}>{t('orders')}</a>
+        {/* Right controls - icon-based */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
+          {/* Account */}
+          <a href="/account" title={locale === 'ru' ? 'Аккаунт' : 'My Account'} style={{
+            width: 34, height: 34, borderRadius: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'transparent', border: 'none',
+            color: 'var(--text-secondary)', fontSize: 16,
+            textDecoration: 'none', transition: 'all 0.2s',
+          }}>👤</a>
 
-          {/* Language toggle */}
-          <button onClick={toggleLocale} style={{
-            padding: '6px 12px', borderRadius: 8,
-            fontSize: 13, fontWeight: 500,
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border)',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 4,
+          {/* Language */}
+          <button onClick={toggleLocale} title={locale === 'en' ? 'Switch to Russian' : 'Switch to English'} style={{
+            width: 34, height: 34, borderRadius: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'transparent', border: 'none',
+            color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600,
+            cursor: 'pointer', transition: 'all 0.2s',
           }}>
-            {locale === 'en' ? '🇬🇧EN' : '🇷🇺RU'}
+            {locale === 'en' ? 'EN' : 'RU'}
           </button>
 
-          {/* Currency display */}
-          <span style={{
-            padding: '6px 10px', borderRadius: 8,
-            fontSize: 13, fontWeight: 500,
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border)',
-            color: 'var(--text-secondary)',
-          }}>$ USD</span>
-
-          {/* Theme toggle */}
-          <button onClick={toggleTheme} style={{
-            width: 36, height: 36, borderRadius: 8,
+          {/* Theme */}
+          <button onClick={toggleTheme} title="Toggle theme" style={{
+            width: 34, height: 34, borderRadius: 10,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border)',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer', fontSize: 16,
+            background: 'transparent', border: 'none',
+            color: 'var(--text-secondary)', fontSize: 15,
+            cursor: 'pointer', transition: 'all 0.2s',
           }}>
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
 
-          {/* Cart button */}
-          <button onClick={() => setCartOpen(true)} style={{
+          {/* Cart */}
+          <button onClick={() => setCartOpen(true)} title="Cart" style={{
             position: 'relative',
-            width: 36, height: 36, borderRadius: 8,
+            width: 34, height: 34, borderRadius: 10,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: cart.length > 0 ? 'var(--brand)' : 'var(--bg-secondary)',
-            border: cart.length > 0 ? 'none' : '1px solid var(--border)',
+            background: cart.length > 0 ? 'var(--brand)' : 'transparent',
+            border: 'none',
             color: cart.length > 0 ? 'white' : 'var(--text-secondary)',
-            cursor: 'pointer', fontSize: 16,
+            cursor: 'pointer', fontSize: 15, transition: 'all 0.2s',
           }}>
             🛒
             {cart.length > 0 && (
               <span style={{
-                position: 'absolute', top: -4, right: -4,
+                position: 'absolute', top: -2, right: -2,
                 background: 'var(--danger)', color: 'white',
-                fontSize: 10, fontWeight: 700,
-                width: 18, height: 18, borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 9, fontWeight: 700, width: 16, height: 16,
+                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>{cart.length}</span>
             )}
           </button>

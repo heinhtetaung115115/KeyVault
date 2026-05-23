@@ -68,33 +68,71 @@ export default function Home() {
       <Toast />
 
       <main style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-        {/* Hero */}
-        <section style={{ textAlign: 'center', padding: '48px 0 32px' }}>
-          <h1 style={{
-            fontSize: 32, fontWeight: 700, margin: 0,
-            lineHeight: 1.2,
-          }}>
-            {t('hero_title')}
-          </h1>
-          <p style={{
-            color: 'var(--text-secondary)', fontSize: 15,
-            maxWidth: 520, margin: '12px auto 0',
-            lineHeight: 1.6,
-          }}>
-            {t('hero_subtitle')}
-          </p>
-
-          {/* Trust badges */}
+        {/* Compact Hero with gradient animation */}
+        <section style={{
+          position: 'relative', overflow: 'hidden',
+          borderRadius: 16, margin: '16px 0 20px',
+          padding: '28px 28px',
+          background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6366f1 100%)',
+          backgroundSize: '200% 200%',
+          animation: 'gradientShift 6s ease infinite',
+        }}>
+          {/* Floating orbs */}
           <div style={{
-            display: 'flex', justifyContent: 'center',
-            flexWrap: 'wrap', gap: 8, marginTop: 20,
-          }}>
-            <span className="trust-badge">⚡ {t('badge_instant')}</span>
-            <span className="trust-badge">🛡 {t('badge_protected')}</span>
-            <span className="trust-badge">✓ {t('badge_verified')}</span>
-            <span className="trust-badge">💳 {t('badge_secure')}</span>
+            position: 'absolute', top: -30, right: -30,
+            width: 120, height: 120, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.08)',
+            animation: 'float 4s ease-in-out infinite',
+          }} />
+          <div style={{
+            position: 'absolute', bottom: -20, left: '30%',
+            width: 80, height: 80, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.06)',
+            animation: 'float 5s ease-in-out infinite reverse',
+          }} />
+
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'white', lineHeight: 1.3 }}>
+                {t('hero_title')}
+              </h1>
+              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, margin: '6px 0 0', lineHeight: 1.5, maxWidth: 400 }}>
+                {t('hero_subtitle')}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {[
+                { icon: '⚡', label: t('badge_instant') },
+                { icon: '🛡', label: t('badge_protected') },
+                { icon: '✓', label: t('badge_verified') },
+                { icon: '💳', label: t('badge_secure') },
+              ].map((b, i) => (
+                <span key={i} style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  padding: '4px 10px', borderRadius: 8,
+                  background: 'rgba(255,255,255,0.15)',
+                  backdropFilter: 'blur(8px)',
+                  color: 'white', fontSize: 11, fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                }}>
+                  {b.icon} {b.label}
+                </span>
+              ))}
+            </div>
           </div>
         </section>
+
+        <style>{`
+          @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+          }
+        `}</style>
 
         {/* Category chips */}
         <div className="chips-scroll" style={{ marginBottom: 16 }}>
