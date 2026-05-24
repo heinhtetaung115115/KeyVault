@@ -290,11 +290,9 @@ export default function AdminDashboard() {
         padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <a href="/" style={{
-            background: 'var(--brand)', color: 'white', width: 32, height: 32, borderRadius: 8,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, fontWeight: 700, textDecoration: 'none',
-          }}>K</a>
+          <a href="/" style={{ width: 32, height: 32, borderRadius: 8, textDecoration: 'none', display: 'block', overflow: 'hidden' }}>
+            <img src="/logo.svg" alt="KeyVault" style={{ width: '100%', height: '100%' }} />
+          </a>
           <span style={{ fontWeight: 700, fontSize: 18 }}>Admin Dashboard</span>
         </div>
         <button onClick={() => { localStorage.removeItem('kv-admin'); setAuthed(false); }}

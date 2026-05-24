@@ -42,15 +42,15 @@ export default function Header({ onSearch }) {
           fontWeight: 700, fontSize: scrolled ? 17 : 18,
           flexShrink: 0, transition: 'font-size 0.3s ease',
         }}>
-          <span style={{
-            background: 'linear-gradient(135deg, var(--brand), var(--brand-hover))',
-            color: 'white',
-            width: scrolled ? 28 : 30, height: scrolled ? 28 : 30,
-            borderRadius: 8,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 14, fontWeight: 700,
-            transition: 'all 0.3s ease',
-          }}>K</span>
+          <img
+            src="/logo.svg"
+            alt="KeyVault"
+            style={{
+              width: scrolled ? 28 : 32, height: scrolled ? 28 : 32,
+              borderRadius: 8,
+              transition: 'all 0.3s ease',
+            }}
+          />
           KeyVault
         </a>
 

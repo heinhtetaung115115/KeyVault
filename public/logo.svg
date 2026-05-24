@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="#0f172a" stroke="#334155" stroke-width="4"/>
+  <!-- Circuit traces -->
+  <line x1="0" y1="192" x2="114" y2="192" stroke="#334155" stroke-width="6"/>
+  <line x1="114" y1="192" x2="114" y2="100" stroke="#334155" stroke-width="6"/>
+  <line x1="398" y1="320" x2="512" y2="320" stroke="#334155" stroke-width="6"/>
+  <line x1="398" y1="320" x2="398" y2="412" stroke="#334155" stroke-width="6"/>
+  <line x1="36" y1="384" x2="138" y2="384" stroke="#334155" stroke-width="6"/>
+  <line x1="374" y1="128" x2="476" y2="128" stroke="#334155" stroke-width="6"/>
+  <!-- Circuit nodes -->
+  <circle cx="114" cy="100" r="12" fill="#6366f1"/>
+  <circle cx="398" cy="412" r="12" fill="#6366f1"/>
+  <circle cx="36" cy="384" r="12" fill="#818cf8"/>
+  <circle cx="476" cy="128" r="12" fill="#818cf8"/>
+  <!-- Central vault -->
+  <rect x="142" y="142" width="228" height="228" rx="44" fill="#1e293b" stroke="#6366f1" stroke-width="6"/>
+  <!-- Lock circle -->
+  <circle cx="256" cy="233" r="48" fill="none" stroke="#818cf8" stroke-width="6"/>
+  <circle cx="256" cy="233" r="18" fill="#6366f1"/>
+  <line x1="256" y1="270" x2="256" y2="330" stroke="#818cf8" stroke-width="6" stroke-linecap="round"/>
+  <!-- Active circuit glow -->
+  <line x1="142" y1="256" x2="0" y2="256" stroke="#6366f1" stroke-width="5" opacity="0.5"/>
+  <line x1="370" y1="256" x2="512" y2="256" stroke="#6366f1" stroke-width="5" opacity="0.5"/>
+</svg>

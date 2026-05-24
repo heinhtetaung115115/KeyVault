@@ -4,6 +4,10 @@ import { StoreProvider } from './components/StoreContext';
 export const metadata = {
   title: 'KeyVault — Digital Keys & Gift Cards',
   description: 'Best prices on game keys, gift cards, and software. Instant delivery, buyer protection.',
+  icons: {
+    icon: '/favicon.png',
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({ children }) {
