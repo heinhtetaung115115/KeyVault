@@ -111,32 +111,19 @@ export default function ProductPage() {
         <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14, fontWeight: 500, marginBottom: 20 }}>{t('back_to_store')}</a>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gap: 36, alignItems: 'start' }}>
-          {/* Image */}
-          <div style={{ borderRadius: 14, overflow: 'hidden', background: 'var(--bg-secondary)', border: '1px solid var(--border)', aspectRatio: '16/10', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {product.image_url ? <img src={product.image_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 80 }}>🎮</span>}
-          </div>
-
-          {/* Right side */}
+          {/* Left: Image + Plans */}
           <div>
-            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, lineHeight: 1.3 }}>{name}</h1>
-            <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--brand)', margin: '12px 0 16px' }}>
-              ${Number(displayPrice).toFixed(2)}
+            <div style={{ borderRadius: 14, overflow: 'hidden', background: 'var(--bg-secondary)', border: '1px solid var(--border)', aspectRatio: '16/10', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {product.image_url ? <img src={product.image_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 80 }}>🎮</span>}
             </div>
 
-            {/* Chips */}
-            <div className="chips-scroll" style={{ marginBottom: 16 }}>
-              <span className="chip active">{isAuto ? `⚡ ${t('auto_delivery')}` : `🕐 ${product.delivery_time || t('manual_delivery')}`}</span>
-              {isAuto && <span className={`chip ${stock === 0 ? 'active' : ''}`} style={stock === 0 ? { background: 'var(--danger)', borderColor: 'var(--danger)', color: 'white' } : {}}>{stock > 0 ? `✓ ${t('in_stock')}` : `❌ ${t('out_of_stock')}`}</span>}
-              {product.category_name && <span className="chip">🏷️ {locale === 'ru' && product.category_name_ru ? product.category_name_ru : product.category_name}</span>}
-            </div>
-
-            {/* Plan selection */}
+            {/* Plan selection below image */}
             {plans.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
+              <div style={{ marginTop: 16 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>
                   {locale === 'ru' ? 'Выберите план' : 'Select Plan'} ({plans.length})
                 </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 280, overflowY: 'auto', paddingRight: 4 }}>
                   {plans.map(plan => {
                     const isSelected = selectedPlan?.id === plan.id;
                     const planLabel = locale === 'ru' && plan.name_ru ? plan.name_ru : plan.name;
@@ -166,6 +153,21 @@ export default function ProductPage() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Right side */}
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, lineHeight: 1.3 }}>{name}</h1>
+            <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--brand)', margin: '12px 0 16px' }}>
+              ${Number(displayPrice).toFixed(2)}
+            </div>
+
+            {/* Chips */}
+            <div className="chips-scroll" style={{ marginBottom: 16 }}>
+              <span className="chip active">{isAuto ? `⚡ ${t('auto_delivery')}` : `🕐 ${product.delivery_time || t('manual_delivery')}`}</span>
+              {isAuto && <span className={`chip ${stock === 0 ? 'active' : ''}`} style={stock === 0 ? { background: 'var(--danger)', borderColor: 'var(--danger)', color: 'white' } : {}}>{stock > 0 ? `✓ ${t('in_stock')}` : `❌ ${t('out_of_stock')}`}</span>}
+              {product.category_name && <span className="chip">🏷️ {locale === 'ru' && product.category_name_ru ? product.category_name_ru : product.category_name}</span>}
+            </div>
 
             {/* Trust badges */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
