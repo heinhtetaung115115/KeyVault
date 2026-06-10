@@ -54,18 +54,18 @@ export default function Header({ onSearch }) {
           KeyVault
         </a>
 
-        {/* Search - expandable */}
+        {/* Search - wider and taller */}
         <div style={{
-          flex: 1, maxWidth: searchFocused ? 500 : 360,
+          flex: 1, maxWidth: searchFocused ? 600 : 480,
           transition: 'max-width 0.3s ease',
           position: 'relative',
         }}>
           <span style={{
-            position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
-            fontSize: 14, color: 'var(--text-muted)', pointerEvents: 'none',
+            position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+            fontSize: 15, color: 'var(--text-muted)', pointerEvents: 'none',
           }}>🔍</span>
           <input
-            type="search"
+            type="text"
             placeholder={t('search_placeholder')}
             value={search}
             onChange={handleSearch}
@@ -75,14 +75,27 @@ export default function Header({ onSearch }) {
               width: '100%',
               background: 'var(--bg-secondary)',
               border: `1px solid ${searchFocused ? 'var(--brand)' : 'var(--border)'}`,
-              borderRadius: 20,
-              padding: '7px 14px 7px 34px',
-              fontSize: 13,
+              borderRadius: 24,
+              padding: '10px 44px 10px 40px',
+              fontSize: 14,
               color: 'var(--text-primary)',
               outline: 'none',
               transition: 'all 0.2s ease',
             }}
           />
+          {search && (
+            <button
+              onMouseDown={(e) => { e.preventDefault(); setSearch(''); onSearch?.(''); }}
+              style={{
+                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                width: 28, height: 28, borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'var(--bg-hover)', border: 'none',
+                color: 'var(--text-muted)', fontSize: 14,
+                cursor: 'pointer', transition: 'all 0.2s',
+              }}
+            >✕</button>
+          )}
         </div>
 
         {/* Right controls - icon-based */}

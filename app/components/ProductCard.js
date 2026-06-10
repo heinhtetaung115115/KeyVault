@@ -38,7 +38,7 @@ export default function ProductCard({ product }) {
           background: isAuto ? '#dcfce7' : '#fef3c7',
           color: isAuto ? '#166534' : '#92400e',
         }}>
-          {isAuto ? '⚡ Auto' : '🕐 Manual'}
+          {isAuto ? '⚡ Auto' : `🕐 ${product.delivery_time || 'Manual'}`}
         </span>
       </div>
 

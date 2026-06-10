@@ -74,7 +74,7 @@ export default function OrderPage() {
 
   const statusConfig = {
     pending: { icon: '⏳', color: '#f59e0b', label: t('payment_processing') },
-    paid: { icon: '✅', color: '#22c55e', label: order.delivery_type === 'manual' ? t('manual_delivery_note') : t('order_pending') },
+    paid: { icon: '✅', color: '#22c55e', label: order.delivery_type === 'manual' ? (order.products?.delivery_time ? `Delivery: ${order.products.delivery_time}` : t('manual_delivery_note')) : t('order_pending') },
     delivered: { icon: '🎉', color: '#22c55e', label: t('order_complete') },
     cancelled: { icon: '❌', color: '#ef4444', label: 'Cancelled' },
     refunded: { icon: '↩️', color: '#6366f1', label: 'Refunded' },
@@ -200,7 +200,7 @@ export default function OrderPage() {
               color: '#92400e', fontSize: 14,
               textAlign: 'center',
             }}>
-              🕐 {t('awaiting_delivery')}
+              🕐 {order.products?.delivery_time ? `Delivery time: ${order.products.delivery_time}` : t('awaiting_delivery')}
             </div>
           )}
 

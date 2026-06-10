@@ -16,7 +16,7 @@ export default function AdminDashboard() {
   const [editProduct, setEditProduct] = useState(null);
   const [form, setForm] = useState({
     name: '', name_ru: '', slug: '', description: '', description_ru: '',
-    price: '', image_url: '', category_id: '', delivery_type: 'auto',
+    price: '', image_url: '', category_id: '', delivery_type: 'auto', delivery_time: '',
     is_featured: false, is_active: true, user_inputs: [],
   });
 
@@ -103,7 +103,7 @@ export default function AdminDashboard() {
   const resetForm = () => {
     setForm({
       name: '', name_ru: '', slug: '', description: '', description_ru: '',
-      price: '', image_url: '', category_id: '', delivery_type: 'auto',
+      price: '', image_url: '', category_id: '', delivery_type: 'auto', delivery_time: '',
       is_featured: false, is_active: true, user_inputs: [],
     });
     setEditProduct(null);
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
       name: p.name || '', name_ru: p.name_ru || '', slug: p.slug || '',
       description: p.description || '', description_ru: p.description_ru || '',
       price: p.price || '', image_url: p.image_url || '',
-      category_id: p.category_id || '', delivery_type: p.delivery_type || 'auto',
+      category_id: p.category_id || '', delivery_type: p.delivery_type || 'auto', delivery_time: p.delivery_time || '',
       is_featured: p.is_featured || false, is_active: p.is_active !== false,
       user_inputs: p.user_inputs || [],
     });
@@ -380,6 +380,12 @@ export default function AdminDashboard() {
                     <option value="manual">Manual (admin delivers)</option>
                   </select>
                 </div>
+                {form.delivery_type === 'manual' && (
+                  <div>
+                    <label style={styles.label}>Delivery Time</label>
+                    <input type="text" value={form.delivery_time} onChange={e => setForm(f => ({ ...f, delivery_time: e.target.value }))} placeholder="e.g. 15-60 minutes, 1-2 hours" />
+                  </div>
+                )}
                 <div style={{ display: 'flex', gap: 20, alignItems: 'center', paddingTop: 24 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
                     <input type="checkbox" checked={form.is_featured}

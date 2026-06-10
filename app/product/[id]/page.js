@@ -124,8 +124,8 @@ export default function ProductPage() {
             </div>
 
             {/* Chips */}
-            <div className="chips-scroll" style={{ marginBottom: 20 }}>
-              <span className="chip active">{isAuto ? `⚡ ${t('auto_delivery')}` : `🕐 ${t('manual_delivery')}`}</span>
+            <div className="chips-scroll" style={{ marginBottom: 16 }}>
+              <span className="chip active">{isAuto ? `⚡ ${t('auto_delivery')}` : `🕐 ${product.delivery_time || t('manual_delivery')}`}</span>
               {isAuto && <span className={`chip ${stock === 0 ? 'active' : ''}`} style={stock === 0 ? { background: 'var(--danger)', borderColor: 'var(--danger)', color: 'white' } : {}}>{stock > 0 ? `✓ ${t('in_stock')}` : `❌ ${t('out_of_stock')}`}</span>}
               {product.category_name && <span className="chip">🏷️ {locale === 'ru' && product.category_name_ru ? product.category_name_ru : product.category_name}</span>}
             </div>
@@ -134,32 +134,32 @@ export default function ProductPage() {
             {plans.length > 0 && (
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>
-                  {locale === 'ru' ? 'Выберите план' : 'Select Plan'}
+                  {locale === 'ru' ? 'Выберите план' : 'Select Plan'} ({plans.length})
                 </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
                   {plans.map(plan => {
                     const isSelected = selectedPlan?.id === plan.id;
                     const planLabel = locale === 'ru' && plan.name_ru ? plan.name_ru : plan.name;
                     return (
                       <button key={plan.id} onClick={() => setSelectedPlan(plan)} style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '12px 16px', borderRadius: 10,
+                        padding: '9px 14px', borderRadius: 8,
                         background: isSelected ? 'var(--brand-light)' : 'var(--bg-card)',
                         border: `2px solid ${isSelected ? 'var(--brand)' : 'var(--border)'}`,
-                        cursor: 'pointer', transition: 'all 0.2s',
-                        color: 'var(--text-primary)',
+                        cursor: 'pointer', transition: 'all 0.15s',
+                        color: 'var(--text-primary)', flexShrink: 0,
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
                           <div style={{
-                            width: 18, height: 18, borderRadius: '50%',
+                            width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
                             border: `2px solid ${isSelected ? 'var(--brand)' : 'var(--border)'}`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                           }}>
-                            {isSelected && <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--brand)' }} />}
+                            {isSelected && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--brand)' }} />}
                           </div>
-                          <span style={{ fontSize: 14, fontWeight: 500 }}>{planLabel}</span>
+                          <span style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{planLabel}</span>
                         </div>
-                        <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--brand)' }}>${Number(plan.price).toFixed(2)}</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--brand)', flexShrink: 0, marginLeft: 8 }}>${Number(plan.price).toFixed(2)}</span>
                       </button>
                     );
                   })}
@@ -168,7 +168,7 @@ export default function ProductPage() {
             )}
 
             {/* Trust badges */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
               <span className="trust-badge">⚡ {t('badge_instant')}</span>
               <span className="trust-badge">🛡 {t('badge_protected')}</span>
               <span className="trust-badge">💳 {t('badge_secure')}</span>
@@ -216,7 +216,7 @@ export default function ProductPage() {
         </div>
 
         {/* Tabs */}
-        <div style={{ marginTop: 40, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ marginTop: 24, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
           <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border)' }}>
             {['description', 'details'].map(tabKey => (
               <button key={tabKey} className={`tab ${activeTab === tabKey ? 'active' : ''}`} onClick={() => setActiveTab(tabKey)}
@@ -228,7 +228,7 @@ export default function ProductPage() {
             {activeTab === 'details' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '12px 24px', maxWidth: 400 }}>
                 <span style={{ color: 'var(--text-muted)' }}>{t('delivery_type')}</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{isAuto ? t('auto_delivery') : t('manual_delivery')}</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{isAuto ? t('auto_delivery') : (product.delivery_time || t('manual_delivery'))}</span>
                 <span style={{ color: 'var(--text-muted)' }}>{t('category')}</span>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{product.category_name || '—'}</span>
                 {isAuto && (<><span style={{ color: 'var(--text-muted)' }}>{t('in_stock')}</span><span style={{ fontWeight: 600, color: stock > 0 ? 'var(--success)' : 'var(--danger)' }}>{stock > 0 ? '✓' : '✕'}</span></>)}
