@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../lib/supabase';
 import { verifyAdmin } from '../../../lib/admin-auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   if (!verifyAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const supabase = getSupabaseAdmin();
@@ -10,6 +12,8 @@ export async function GET(request) {
     .from('products')
     .select('*, categories(name, slug)')
     .order('created_at', { ascending: false });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Get stock counts
   const { data: stockData } = await supabase
@@ -29,7 +33,6 @@ export async function GET(request) {
     total_keys: totalMap[p.id] || 0,
   }));
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(enriched);
 }
 
