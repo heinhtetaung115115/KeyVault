@@ -70,8 +70,17 @@ export default function AdminDashboard() {
     try {
       const res = await fetch('/api/admin/products', { headers });
       const data = await res.json();
-      setProducts(Array.isArray(data) ? data : []);
-    } catch(_e) {}
+      if (data.error) {
+        console.error('Admin products error:', data.error);
+        flash('Error loading products: ' + data.error);
+        setProducts([]);
+      } else {
+        setProducts(Array.isArray(data) ? data : []);
+      }
+    } catch(_e) {
+      console.error('Fetch products failed:', _e);
+      flash('Failed to load products');
+    }
   }, [password]);
 
   const fetchCategories = useCallback(async () => {
@@ -445,7 +454,16 @@ export default function AdminDashboard() {
 
             {/* Product list */}
             <div style={styles.card}>
-              <h3 style={styles.cardTitle}>📦 All Products ({products.length})</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h3 style={{ ...styles.cardTitle, margin: 0 }}>📦 All Products ({products.length})</h3>
+                <button onClick={async () => {
+                  try {
+                    const res = await fetch('/api/admin/products', { headers });
+                    const text = await res.text();
+                    alert('Status: ' + res.status + '\n\nResponse: ' + text.slice(0, 500));
+                  } catch(e) { alert('Fetch error: ' + e.message); }
+                }} style={styles.smallBtn}>🔍 Debug API</button>
+              </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={styles.table}>
                   <thead>
